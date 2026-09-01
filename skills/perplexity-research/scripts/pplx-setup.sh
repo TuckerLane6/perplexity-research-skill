@@ -57,7 +57,8 @@ report() {
   if APP=$(find_app); then echo "Perplexity app:  found at $APP"
   else echo "Perplexity app:  not found"; fi
   if CLI=$(find_cli); then echo "Desktop helper:  found at $CLI"
-  else echo "Desktop helper:  not installed (build it with --install-cli, or use the browser path)"; fi
+  elif [ "$PLATFORM" = "macos" ]; then echo "Desktop helper:  not installed (build it with --install-cli)"
+  else echo "Desktop helper:  not applicable on this platform"; fi
   if [ -f "$CONFIG" ]; then echo "Recorded path:   $(grep -E '^path=' "$CONFIG" | cut -d= -f2)"
   else echo "Recorded path:   none yet — ask the user which they prefer, then rerun with --path"; fi
 

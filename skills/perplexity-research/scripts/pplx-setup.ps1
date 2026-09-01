@@ -74,7 +74,7 @@ if ($Doctor) {
   $recorded = Get-RecordedPath
   if ($recorded -eq 'browser') {
     Write-Host 'INFO  browser path: this script cannot test it, because the browser is driven'
-    Write-Host '      by the agent own automation. Check it by opening perplexity.ai in a new'
+    Write-Host '      by the agent''s own automation. Check it by opening perplexity.ai in a new'
     Write-Host '      tab and confirming the composer is in Search mode before the first ask.'
   } elseif ($recorded -eq 'app') {
     Write-Host 'FAIL  the app path is recorded but cannot run off macOS. Re-run with -Path browser.'
