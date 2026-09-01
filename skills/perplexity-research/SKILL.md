@@ -132,38 +132,53 @@ once, by hand. There is nothing for this skill to authenticate.
   themselves. Do not work around it.
 - Store nothing about the user beyond the two-line path config.
 
-## Never spend the user's money
+## Money: ask first, then wait for a yes
 
-21. Use plain Search mode. Before submitting in a browser, confirm the composer
-    is in Search mode — some Perplexity composers default to an agent mode that
-    consumes paid credits.
-22. Abort and report if a submission lands on a URL containing `/computer/`, or
-    on any other agent-mode session. Do not retry it.
-23. Never click "Add credits", never start a subscription or upgrade flow, and
-    never select a mode or model marked as a higher tier than the user's plan.
-    Those are the user's purchasing decisions, not the session's.
-24. Deep Research draws on a quota the user shares with their own usage, and
-    consumer plans do not publish how much of it is left — so neither the session
-    nor the user can measure it. Say you are about to run one and get a yes
-    first. Plain searches need no permission.
+Spending the user's money is allowed. Spending it without being told to is not.
+The rule is a gate, not a ban.
+
+21. **Plain Search is free** beyond the plan the user already pays for. Run it as
+    often as the work needs; no permission needed.
+22. **Deep Research draws a quota**, and consumer plans do not publish how much of
+    it is left, so neither the session nor the user can measure it. Say you are
+    about to run one and wait for a yes.
+23. **Agent modes spend real credits** — the ones variously called Computer,
+    Control browser, or similar. They are available to use. Before selecting one,
+    or before submitting into a composer already set to one, tell the user
+    plainly: which mode, that it spends credits rather than quota, roughly what
+    the task looks like in size, and any balance you can actually see. Then wait
+    for an explicit yes in the conversation.
+24. **A yes covers that one run.** Not the next one, not the rest of the session,
+    and not a bigger version of the same task. Ask again each time.
+25. **Never buy anything, ever.** Spending credits the user already holds is
+    their call to make. Adding credits, upgrading a plan, starting a
+    subscription, or entering payment details is a purchase — never click those,
+    even if the user has approved a paid run, and even if a task stalls for want
+    of balance. Say it stalled and let them decide outside the session.
+26. **The scripts fail closed.** `scripts/pplx-ask.sh` stops when the composer is
+    in a credit-spending mode and will only go ahead when passed
+    `--credits-approved`. Pass that flag only after the user has said yes to
+    that specific run. Never pass it to get past an error.
+27. If a submission lands somewhere paid that nobody approved, stop, do not
+    retry, and tell the user what happened.
 
 ## Never leak the user's data
 
-25. A question is an outbound message. Never put credentials, API keys, private
+28. A question is an outbound message. Never put credentials, API keys, private
     customer records, contract terms, or anything under an agreement into one.
-26. Before pointing Perplexity's folder or file context at a directory, check
+29. Before pointing Perplexity's folder or file context at a directory, check
     what is in that directory. Point it at a purpose-built folder holding only
     material that is safe to share, never at a whole working repository, which
     normally holds keys and private files.
-27. Leave the account as you found it: delete throwaway test threads, and if
+30. Leave the account as you found it: delete throwaway test threads, and if
     you change the model or mode selector, set it back.
 
 ## When it does not work
 
-28. App path, nothing comes back: run the helper's dump command and look for
+31. App path, nothing comes back: run the helper's dump command and look for
     the answer text in the accessibility tree. `references/SETUP.md` has the
     exact commands and the known failure shapes.
-29. Browser path, the answer looks truncated: the page streams, so poll until
+32. Browser path, the answer looks truncated: the page streams, so poll until
     the text stops changing rather than reading once.
-30. Either path, twice failed: tell the user plainly what failed and offer the
+33. Either path, twice failed: tell the user plainly what failed and offer the
     other path. Do not keep retrying the same broken route.

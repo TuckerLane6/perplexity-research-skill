@@ -158,14 +158,19 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
 
 - **Plain Search** is the default and the right choice for almost everything: a
   question, a claim check, a fast iteration loop.
-- **Deep Research** returns far more sources and takes minutes. It draws on a
-  daily quota shared with the person's own usage, so ask before running one.
+- **Deep Research** returns far more sources and takes minutes. It draws a quota
+  shared with the person's own usage that consumer plans do not publish, so ask
+  before running one and take the yes as covering that run only.
   Judge whether it really ran from the behavior — many steps, minutes, dozens
   of sources. A three-step answer that returns quickly ran as a plain search.
 - **Agent modes** (variously called Computer, Control browser, or similar) spend
-  paid credits and drive things on their own. This skill never selects them.
+  real credits and drive things on their own. They are available to use, but the
+  skill stops and asks before touching one, and the ask script will only submit
+  into a paid mode when passed `--credits-approved` after the user has said yes
+  to that specific run.
 - **Tier-gated models and modes** are an upgrade prompt for anyone not on that
-  plan. Never select one on the user's behalf.
+  plan. Never select one, and never click add-credits, upgrade or subscribe -
+  approving a paid run is not approving a purchase.
 - If a model selector is changed for one round, set it back afterward — the
   account belongs to a person who will use it next.
 

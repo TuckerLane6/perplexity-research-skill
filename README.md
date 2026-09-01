@@ -3,8 +3,9 @@
 Ask Perplexity a research question from inside a coding session and get the
 sourced answer back in the transcript — no copy-paste between windows.
 
-It runs on **your own Perplexity subscription**. There is no API key, and no code
-path that can spend money. The default is the **desktop app**, driven in the
+It runs on **your own Perplexity subscription**. There is no API key. Plain
+searches cost nothing beyond the plan you already pay for, and anything that
+would spend credits stops and asks you first. The default is the **desktop app**, driven in the
 background so it never takes over your screen; a **browser** path is the fallback
 for machines that cannot run the app.
 
@@ -93,11 +94,13 @@ admits it drops to standard mode when it cannot find the toggle — so a "deep
 research" request quietly returns a five-second answer. Here a model that cannot
 be selected is a stated fallback with a note, never a silent downgrade.
 
-**They can spend money.** The official server bills every call to your API key.
-This skill has no API-key code path at all, refuses to submit when an agent mode
-that consumes credits is active, and never touches a purchase control. Search and
-Deep Research draw on subscription quota; only agent modes cost money, and this
-skill will not start one.
+**They spend money without asking.** The official server bills every call to your
+API key. This skill has no API-key code path at all. Plain search is free beyond
+your plan. The paid modes are still available to you — but the skill stops before
+using one, tells you what it is and that it spends credits, and waits for you to
+say yes in the conversation. A yes covers that one run, not the rest of the
+session. It never touches a purchase control at all: spending credits you hold is
+your call, buying more is not something a session should ever do for you.
 
 **They stomp your clipboard, or your browser session.** The app path reads
 answers out of the accessibility tree without touching the clipboard. When an
@@ -109,10 +112,12 @@ some other thread.
 
 ## What it will not do
 
-- **Spend money.** No API key, plain Search by default, refuses to submit while
-  an agent mode is active, never clicks add-credits or upgrade, never selects a
-  model gated to a higher plan. Deep Research draws a quota you cannot measure on
-  a consumer plan, so it asks first.
+- **Spend anything without asking.** No API key. Plain Search runs freely because
+  it is already covered by your plan. Deep Research draws a quota you cannot
+  measure, and agent modes spend real credits — both stop and ask, every time,
+  and a yes applies to that run only. It never clicks add-credits, upgrade or
+  subscribe under any circumstances, and never selects a model gated above your
+  plan.
 - **Leak your files.** A question is an outbound message: credentials, keys,
   private records and material under agreement stay out. If you want local
   context, point the app at a folder built for sharing, never at a whole repo.

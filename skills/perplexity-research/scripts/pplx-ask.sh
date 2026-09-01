@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pplx-ask.sh "question" [max_wait_seconds]
+# pplx-ask.sh "question" [max_wait_seconds] [--credits-approved]
 #
 # Runs one plain-Search round in the Perplexity desktop app and prints the answer.
 # Background-safe: it sets the composer through the accessibility API, submits with
@@ -7,8 +7,11 @@
 # No keystrokes, no clipboard writes, no window activation, so the person at the
 # keyboard can keep working.
 #
-# Plain Search only. Never selects an agent mode and never touches a purchase
-# control. Deep Research needs a mode click the user makes themselves first.
+# Plain Search by default, which costs nothing beyond the plan. If the composer is
+# in a mode that spends credits, this stops rather than submitting - unless the
+# caller passes --credits-approved, which it may only do after the user has said
+# yes to THAT run in the conversation. It never touches a purchase control either
+# way: spending held credits is the user's call, buying more is not this script's.
 set -uo pipefail
 
 # This script drives the macOS desktop app through the macOS accessibility API.
@@ -22,7 +25,17 @@ if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
   exit 1
 fi
 
-Q="${1:?usage: pplx-ask.sh \"question\" [max_wait_seconds]}"
+CREDITS_APPROVED=0
+ARGS=()
+for a in "$@"; do
+  case "$a" in
+    --credits-approved) CREDITS_APPROVED=1 ;;
+    *) ARGS+=("$a") ;;
+  esac
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+
+Q="${1:?usage: pplx-ask.sh \"question\" [max_wait_seconds] [--credits-approved]}"
 MAXWAIT="${2:-180}"
 
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/perplexity-research-skill/config"
@@ -73,9 +86,16 @@ fi
 # instead of discovered afterwards on the bill.
 MODES="$("$PPLX" dump 2>&1)"
 if printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On'; then
-  echo "REFUSING TO SUBMIT: the composer is in an agent mode that spends paid credits." >&2
-  echo "Switch it back to Search in the app, then retry." >&2
-  exit 3
+  if [ "$CREDITS_APPROVED" = 1 ]; then
+    echo "NOTE: submitting in a credit-spending mode, with the caller asserting the user approved this run." >&2
+  else
+    echo "STOPPED: the composer is in a mode that spends the user's credits." >&2
+    echo "This is allowed, but it needs a yes first. Tell the user which mode it is," >&2
+    echo "that it spends credits rather than quota, and what the run looks like." >&2
+    echo "If they say yes, re-run this exact command with --credits-approved." >&2
+    echo "If they would rather not, switch the composer back to Search." >&2
+    exit 3
+  fi
 fi
 if ! printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=Search title=- val=On'; then
   echo "NOTE: could not confirm Search mode is active in this app build; continuing." >&2
