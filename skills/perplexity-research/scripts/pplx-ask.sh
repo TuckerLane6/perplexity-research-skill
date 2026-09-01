@@ -140,14 +140,23 @@ if [ "$SEARCH_CONFIRMED" != 1 ] && [ "$CREDITS_APPROVED" != 1 ]; then
   exit 3
 fi
 
-printf '%s' "$Q" | "$PPLX" set-input || { echo "Could not write the question into the composer." >&2; exit 1; }
+# >/dev/null: the helper reports "set N chars" on stdout, and this script's stdout
+# is the answer. Left alone it prints that line above the answer, where a caller
+# quoting the output would carry it along as though it were part of the reply.
+printf '%s' "$Q" | "$PPLX" set-input >/dev/null || { echo "Could not write the question into the composer." >&2; exit 1; }
 sleep 1
 
 # Writing the value can report success while the composer ends up empty (the app
 # re-renders the composer on some transitions). Confirm the text is really there
 # before submitting, and write it once more if it is not, submitting an empty
 # composer produces a confusing "nothing happened".
-if ! grep -qE '\[AXTextArea\][^=]*val=.+' <<<"$(dump_now)"; then
+#
+# Match to the END of the row, not with [^=]*: a real row reads
+#   [AXTextArea] desc=- title=- val=the question
+# and [^=]* cannot cross the = in desc=, so that shape never matched and this
+# guard silently re-wrote the composer on every single run. An empty composer
+# reports a bare `val=` with nothing after it, which is what .+ separates.
+if ! grep -qE '\[AXTextArea\].*[[:space:]]val=.+' <<<"$(dump_now)"; then
   sleep 1
   printf '%s' "$Q" | "$PPLX" set-input >/dev/null 2>&1 || true
   sleep 1
@@ -202,8 +211,10 @@ read_tree() {
         q = substr(ENVIRON["PPLX_Q"], 1, 40)
         # UI chrome that sits inside the answer region on some builds
         # Chrome labels only. "Pro", "Search" and bare numbers were in this list
-        # and were eating real answers: a one-word reply, a year, a count.
-        noise = "^(MCP Tool|Success|Copy|Share|Answer|Sources|Images|Show more|Related|Ask a follow-up|[[:space:]]*)$"
+        # and were eating real answers: a one-word reply, a year, a count. Add a
+        # label here only after seeing the app actually print it, for the same
+        # reason: a plausible-looking guess silently deletes a real answer.
+        noise = "^(MCP Tool|Success|Copy|Share|Answer|Sources|Images|Show more|Related|Ask a follow-up|Searching the web|[[:space:]]*)$"
       }
       { line[NR] = $0; if (index($0, q) > 0) last = NR }
       END {
@@ -214,7 +225,7 @@ read_tree() {
           # research.
           print "ANSWER-NOT-LOCATED: the question was not found in the thread, so the answer" > "/dev/stderr"
           print "region could not be isolated. Nothing printed, to avoid returning unrelated threads." > "/dev/stderr"
-          exit 9
+          exit 4
         }
         for (i = last + 1; i <= NR; i++) {
           t = line[i]
@@ -231,29 +242,55 @@ read_tree() {
 # The clipboard belongs to the person at the keyboard, so it is saved first and put
 # straight back, it is borrowed for about a second, never kept.
 read_clipboard() {
-  local saved answer flavours
+  local saved answer flavours field
   # pbpaste and pbcopy only carry plain text. If the clipboard currently holds an
-  # image, RTF or files, a save-and-restore round trip would silently replace it
-  # with empty text. Losing someone's clipboard is worse than a short answer, so
-  # skip the fallback entirely unless the clipboard is text or empty.
-  # Any rich flavour present means a text-only round trip would destroy it, and a
-  # mixed clipboard (browser copy, Word) carries both. Skip unless it is text and
-  # nothing else. A failed lookup is also a skip: not knowing is not permission.
+  # image, styled text or files, a save-and-restore round trip would silently
+  # replace it with plain text or nothing. Losing someone's clipboard is worse
+  # than a short answer, so skip the fallback entirely unless every flavour on the
+  # clipboard is a plain-text one. A failed lookup is also a skip: not knowing is
+  # not permission.
+  #
+  # This is an ALLOWLIST on purpose. It started as a list of rich flavours to
+  # refuse, which let through everything nobody thought to name: spreadsheet and
+  # presentation clippings arrive under an app-specific dynamic type
+  # («class dyn.ah62d4rv...»), and GIFf, PICT and icns were all missing too.
+  #
+  # `clipboard info` returns flavour and BYTE SIZE alternating, comma separated:
+  #   «class utf8», 99, «class ut16», 200, string, 99, Unicode text, 198
+  # so the numeric fields have to be dropped before the allowlist runs, or every
+  # clipboard on earth fails it.
   flavours="$(osascript -e 'clipboard info' 2>/dev/null)" || {
     echo "NOTE: could not read the clipboard's contents, so it was left alone." >&2
     return 1; }
-  case "$flavours" in
-    *PNGf*|*TIFF*|*furl*|*"file names"*|*RTF*|*HTML*|*PDF*|*moov*|*JPEG*)
-       echo "NOTE: clipboard holds non-text content, so it was left alone and the" >&2
-       echo "      long-answer fallback was skipped." >&2
-       return 1 ;;
-  esac
   [ -n "$flavours" ] || return 1
-  saved="$(pbpaste 2>/dev/null || true)"
+  while IFS= read -r field; do
+    field="$(printf '%s' "$field" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    case "$field" in
+      ''|*[!0-9]*) ;;                                    # not a size: check it below
+      *) continue ;;                                     # a byte count: skip
+    esac
+    case "$field" in
+      ''|string|"Unicode text"|"«class utf8»"|"«class ut16»"|"«class TEXT»") ;;
+      *) echo "NOTE: the clipboard holds something other than plain text ($field)," >&2
+         echo "      so it was left alone and the long-answer fallback was skipped." >&2
+         return 1 ;;
+    esac
+  done <<EOF
+$(printf '%s' "$flavours" | tr ',' '\n')
+EOF
+  # From here the clipboard is about to be borrowed, so a failure to save it or to
+  # put it back is the exact loss this function exists to prevent. Say so out loud
+  # rather than swallowing it: silently handing someone's clipboard to a different
+  # thread's text is the worst outcome available here.
+  saved="$(pbpaste 2>/dev/null)" || {
+    echo "NOTE: the clipboard could not be saved, so it was left alone." >&2
+    return 1; }
   "$PPLX" click "Copy" >/dev/null 2>&1 || return 1
   sleep 1
   answer="$(pbpaste 2>/dev/null || true)"
-  printf '%s' "$saved" | pbcopy 2>/dev/null || true
+  printf '%s' "$saved" | pbcopy 2>/dev/null || {
+    echo "WARNING: the clipboard could not be put back. It now holds the copied" >&2
+    echo "         answer, not what was there before. Copy something to clear it." >&2; }
   [ -n "$answer" ] || return 1
   printf '%s\n' "$answer"
 }
@@ -281,7 +318,13 @@ EOF
 # accessibility tree fills in behind it, read once at that instant and you get a
 # fragment. Poll until two consecutive reads agree, the same way the browser path
 # waits for the page to stop growing.
-ANSWER="$(read_tree)"
+#
+# A refusal from read_tree (the question was not found, so the answer region
+# could not be isolated) must end the run. Assigning without checking the status
+# left ANSWER empty, and an empty answer reads as "unfinished", which then sent
+# the run on to the clipboard fallback and printed truncation boilerplate as
+# though it were a real reply. Exit 4 instead, the code AGENTS.md documents.
+if ! ANSWER="$(read_tree)"; then exit 4; fi
 for _ in 1 2 3 4 5; do
   sleep 2
   NEXT="$(read_tree)" || break

@@ -43,9 +43,10 @@ nothing to install and nothing to build. Record it once and start asking.
 - **Windows with Git Bash or WSL**: `scripts/pplx-setup.sh --path browser`
 - **Linux**: `scripts/pplx-setup.sh --path browser`
 - **No usable shell**: write the config file directly. It lives at
-  `~/.config/perplexity-research-skill/config` on every platform. It holds a
-  comment line and `path=browser`, and on the app path a third line recording
-  where the helper lives.
+  `"${XDG_CONFIG_HOME:-$HOME/.config}"/perplexity-research-skill/config`, which
+  is `~/.config/perplexity-research-skill/config` unless `XDG_CONFIG_HOME` is
+  set. It holds a comment line and `path=browser`, and on the app path a third
+  line recording where the helper lives.
 
 Both setup scripts write the same file in the same place, so it does not matter
 which one a machine uses. PowerShell writes LF line endings for that reason, and
@@ -189,3 +190,12 @@ machine. Keep credentials, keys, private customer records, and material under
 an agreement out of it. If folder or file context is useful, create a folder
 that holds only shareable material and point the app at that, never at a whole
 working repository, which normally contains private files.
+
+Locally, the app path reads the accessibility tree several times per question,
+and that tree lists the titles of other recent threads in the sidebar as well as
+the open one. `pplx-ask.sh` cuts the answer out of it and never prints the rest,
+but on the version of bash that ships with macOS a `<<<` here-string is spooled
+through a temporary file, so those snapshots touch the disk briefly. They are
+written with owner-only permissions and removed as soon as the check finishes.
+Nothing is written to a lasting file, and nothing about the tree is sent
+anywhere.

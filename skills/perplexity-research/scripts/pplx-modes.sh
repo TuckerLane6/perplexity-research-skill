@@ -86,8 +86,14 @@ sleep 2
   | sed 's/^/  /'
 
 # Close the picker by reselecting what was already selected: leaves the account
-# exactly as it was found, which matters because a person shares this app.
-"$PPLX" click "$OPENED" >/dev/null 2>&1 || true
+# exactly as it was found, which matters because a person shares this app. Say so
+# when that fails, rather than reporting success over a picker left hanging open
+# in someone's app.
+if ! "$PPLX" click "$OPENED" >/dev/null 2>&1; then
+  echo
+  echo "  NOTE: the model picker was opened to read this list and could not be closed"
+  echo "        again. It is still open on \"$OPENED\" in the app; press Escape there."
+fi
 echo
 echo "  (rows marked with a higher tier belong to a plan this account may not have:"
 echo "   never select one; it is an upgrade prompt, not a capability)"

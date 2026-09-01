@@ -27,8 +27,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# Same location the bash script uses, so both agree on one machine.
-$ConfigDir = Join-Path (Join-Path $HOME '.config') 'perplexity-research-skill'
+# Same location the bash script uses, so both agree on one machine. The bash
+# scripts honour XDG_CONFIG_HOME, so this must too: on a Linux or WSL box that
+# sets it, writing to $HOME/.config would leave a config the bash side never reads.
+$ConfigBase = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { Join-Path $HOME '.config' }
+$ConfigDir = Join-Path $ConfigBase 'perplexity-research-skill'
 $ConfigFile = Join-Path $ConfigDir 'config'
 
 function Get-RecordedPath {

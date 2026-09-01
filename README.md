@@ -52,7 +52,8 @@ Then ask for research in a session:
 > ask Perplexity what practitioners actually say about X, with sources
 
 On macOS the skill asks once which path you want, offering the app first, and
-records your answer in `~/.config/perplexity-research-skill/config`. On Windows
+records your answer in `~/.config/perplexity-research-skill/config`, or under
+`XDG_CONFIG_HOME` if you set that. On Windows
 and Linux only one path works, so it says so and uses the browser instead of
 asking a question with a single possible answer.
 

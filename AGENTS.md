@@ -47,7 +47,8 @@ get the browser path, which is not a downgrade in capability, only the app
 automation is macOS-specific. On Windows use `scripts/pplx-setup.ps1 -Path
 browser` (works on the PowerShell that ships with Windows), or the bash script
 under Git Bash or WSL. With no shell at all, write the config file yourself at
-`~/.config/perplexity-research-skill/config`: a comment line and `path=browser`.
+`"${XDG_CONFIG_HOME:-$HOME/.config}"/perplexity-research-skill/config`: a comment
+line and `path=browser`.
 
 ## Rules an agent must not break
 
@@ -92,8 +93,8 @@ under Git Bash or WSL. With no shell at all, write the config file yourself at
 | 0 | answer printed on stdout |
 | 1 | setup problem, helper missing, app has no window, composer unreachable |
 | 2 | the answer did not finish inside the wait window; the thread still exists in the app |
-| 4 | stopped: this thread's answer could not be isolated, so nothing was printed |
 | 3 | stopped before spending: either a credit-spending mode was active, or the free Search mode could not be confirmed. The message says which |
+| 4 | stopped: this thread's answer could not be isolated, so nothing was printed |
 
 Treat 3 as "go ask the user", not a retry. If a paid mode was active: ask, and
 re-run with `--credits-approved` if they agree, or switch the composer back to
