@@ -5,9 +5,9 @@ sourced answer back in the transcript — no copy-paste between windows.
 
 It runs on **your own Perplexity subscription**. There is no API key. Plain
 searches cost nothing beyond the plan you already pay for, and anything that
-would spend credits stops and asks you first. The default is the **desktop app**, driven in the
-background so it never takes over your screen; a **browser** path is the fallback
-for machines that cannot run the app.
+would spend credits stops and asks you first. The default is the **desktop app**,
+driven in the background so it never takes over your screen; a **browser** path
+is the fallback for machines that cannot run the app.
 
 Works on **macOS, Windows and Linux**, and in Claude Code, Codex, or any other
 agent that can run a shell command — see [AGENTS.md](AGENTS.md).

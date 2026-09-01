@@ -11,8 +11,9 @@ short version plus the notes that matter to a non-Claude agent.
 
 Asks the user's own Perplexity account a research question and returns the
 sourced answer into the session, without the user copying anything between
-windows. It uses their existing subscription — no paid API key, and it refuses
-to touch anything that spends credits.
+windows. It uses their existing subscription — no paid API key. Plain searches
+are free beyond that plan; anything that would spend credits stops and asks the
+user first, and proceeds only on an explicit yes to that run.
 
 ## Use it
 
