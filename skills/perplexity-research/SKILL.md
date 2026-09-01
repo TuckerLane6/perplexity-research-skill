@@ -1,12 +1,13 @@
 ---
 name: perplexity-research
-description: Ask Perplexity a research question from inside a Claude session and get the sourced answer back — through the Perplexity desktop app or through a browser, whichever the user prefers. Use for "ask Perplexity", "research this with sources", "check this claim", "what do practitioners actually say", "get me citations", or whenever an answer needs sources the model cannot supply from memory.
+description: Ask Perplexity a research question from a coding session and get the sourced answer back, with its citations. Runs on the user's own Perplexity subscription — no API key and no per-question billing — driving the desktop app by default on macOS, or a browser on Windows and Linux. Anything that would spend credits stops and asks first. Use for "ask Perplexity", "research this with sources", "check this claim", "what do practitioners actually say", "get me citations", "is that vendor stat real", or whenever an answer needs sources the model cannot supply from memory.
 ---
 
 # Perplexity research — ask from the session, get sources back
 
-Runs on the user's own Perplexity account. Costs nothing beyond what a plain
-search on that account already costs. Setup details and troubleshooting:
+Runs on the user's own Perplexity account: no API key, and plain searches cost
+nothing beyond the plan they already pay for. The paid modes are available but
+gated — they stop and ask before spending anything. Setup and troubleshooting:
 `references/SETUP.md`.
 
 Ask questions the way a person would, and report answers back in plain English.
