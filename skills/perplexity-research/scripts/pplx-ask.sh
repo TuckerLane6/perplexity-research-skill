@@ -76,8 +76,13 @@ case "$PPLX" in
      exit 1 ;;
 esac
 
-has_window() { "$PPLX" dump 2>&1 | grep -qE '^\[windows\] count=[1-9]'; }
-has_composer() { "$PPLX" dump 2>&1 | grep -qE '\[AXTextArea\]'; }
+# NOTE: never pipe a dump straight into `grep -q`. With `pipefail` set, grep -q
+# exits on the first match, the writer takes SIGPIPE, and the pipeline reports
+# 141, so a MATCH reads as NO MATCH once the tree outgrows the pipe buffer. Every
+# check below captures the dump first and matches with a here-string.
+dump_now() { "$PPLX" dump 2>&1; }
+has_window() { grep -qE '^\[windows\] count=[1-9]' <<<"$(dump_now)"; }
+has_composer() { grep -qE '\[AXTextArea\]' <<<"$(dump_now)"; }
 
 # The app can be running with no window at all (its window was closed, or a stray
 # click dismissed it). Reopen it WITHOUT activating it: -g leaves the person's
@@ -109,7 +114,7 @@ fi
 # an agent mode that would spend paid credits can be caught BEFORE submitting
 # instead of discovered afterwards on the bill.
 MODES="$("$PPLX" dump 2>&1)"
-if printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On'; then
+if grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On' <<<"$MODES"; then
   if [ "$CREDITS_APPROVED" = 1 ]; then
     echo "NOTE: submitting in a credit-spending mode, with the caller asserting the user approved this run." >&2
   else
@@ -126,7 +131,7 @@ fi
 # whatever mode is actually selected. Fail closed: require positive confirmation
 # of Search, or an explicit approval, before spending anything.
 SEARCH_CONFIRMED=0
-printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=Search title=- val=On' && SEARCH_CONFIRMED=1
+grep -qE '\[AXButton\] desc=Search title=- val=On' <<<"$MODES" && SEARCH_CONFIRMED=1
 if [ "$SEARCH_CONFIRMED" != 1 ] && [ "$CREDITS_APPROVED" != 1 ]; then
   echo "STOPPED: could not confirm the composer is in Search mode." >&2
   echo "This build may name its mode buttons differently, so the run could be" >&2
@@ -142,7 +147,7 @@ sleep 1
 # re-renders the composer on some transitions). Confirm the text is really there
 # before submitting, and write it once more if it is not, submitting an empty
 # composer produces a confusing "nothing happened".
-if ! "$PPLX" dump 2>&1 | grep -qE '\[AXTextArea\][^=]*val=.+'; then
+if ! grep -qE '\[AXTextArea\][^=]*val=.+' <<<"$(dump_now)"; then
   sleep 1
   printf '%s' "$Q" | "$PPLX" set-input >/dev/null 2>&1 || true
   sleep 1
@@ -167,7 +172,7 @@ ELAPSED=0
 DONE=0
 while [ "$ELAPSED" -lt "$MAXWAIT" ]; do
   sleep 8; ELAPSED=$((ELAPSED + 8))
-  if "$PPLX" dump 2>&1 | grep -qE '\[AXButton\] desc=Copy title='; then DONE=1; break; fi
+  if grep -qE '\[AXButton\] desc=Copy title=' <<<"$(dump_now)"; then DONE=1; break; fi
 done
 
 if [ "$DONE" != 1 ]; then
@@ -182,8 +187,8 @@ fi
 # tree too, printing them would spill unrelated history into the transcript. The
 # question itself appears twice: once in that sidebar list, then again at the top
 # of the open thread. Everything after its LAST occurrence is this answer, so cut
-# there. The short leftovers after the cut are step labels, dropped by a length
-# floor.
+# there. The leftovers after the cut are the app's own step labels, dropped by the
+# noise list below.
 #
 # Do NOT filter by line length: answers contain short lines (list items, "Yes.",
 # a name, a number) and a length floor silently truncates them. Filter by what the
@@ -231,13 +236,19 @@ read_clipboard() {
   # image, RTF or files, a save-and-restore round trip would silently replace it
   # with empty text. Losing someone's clipboard is worse than a short answer, so
   # skip the fallback entirely unless the clipboard is text or empty.
-  flavours="$(osascript -e 'clipboard info' 2>/dev/null || true)"
+  # Any rich flavour present means a text-only round trip would destroy it, and a
+  # mixed clipboard (browser copy, Word) carries both. Skip unless it is text and
+  # nothing else. A failed lookup is also a skip: not knowing is not permission.
+  flavours="$(osascript -e 'clipboard info' 2>/dev/null)" || {
+    echo "NOTE: could not read the clipboard's contents, so it was left alone." >&2
+    return 1; }
   case "$flavours" in
-    ""|*utf8*|*"«class utf8»"*|*string*) ;;
-    *) echo "NOTE: clipboard holds non-text content, so it was left alone and the" >&2
+    *PNGf*|*TIFF*|*furl*|*"file names"*|*RTF*|*HTML*|*PDF*|*moov*|*JPEG*)
+       echo "NOTE: clipboard holds non-text content, so it was left alone and the" >&2
        echo "      long-answer fallback was skipped." >&2
        return 1 ;;
   esac
+  [ -n "$flavours" ] || return 1
   saved="$(pbpaste 2>/dev/null || true)"
   "$PPLX" click "Copy" >/dev/null 2>&1 || return 1
   sleep 1
@@ -273,7 +284,7 @@ EOF
 ANSWER="$(read_tree)"
 for _ in 1 2 3 4 5; do
   sleep 2
-  NEXT="$(read_tree)"
+  NEXT="$(read_tree)" || break
   [ "$NEXT" = "$ANSWER" ] && break
   ANSWER="$NEXT"
 done
@@ -283,7 +294,7 @@ SOURCE_OF_TEXT="accessibility tree, clipboard untouched"
 # on sentence punctuation, otherwise a complete answer reads as truncated.
 LAST_LINE="$(printf '%s' "$ANSWER" | tail -1 | sed -e 's/\xef\xbf\xbc//g' -e 's/[[:space:]]*$//')"
 case "$LAST_LINE" in
-  *[.!?\"\)]|*：|*。) : ;;                     # ends on sentence punctuation: complete
+  *[.!?\"\)\]:]|*：|*。) : ;;                     # ends on sentence punctuation: complete
   *)
     if FULL="$(read_clipboard)" && copy_matches_this_answer "$FULL" "$ANSWER"; then
       ANSWER="$FULL"
@@ -300,7 +311,7 @@ printf '%s\n' "$ANSWER"
 echo
 # The whole point of asking Perplexity rather than answering from memory is the
 # sourcing, so say plainly whether this answer has any.
-if "$PPLX" dump 2>&1 | grep -qE '\[AXButton\] desc=Sources title='; then
+if grep -qE '\[AXButton\] desc=Sources title=' <<<"$(dump_now)"; then
   echo "--- sources: the thread has a Sources panel; open it in the app to read the list ---"
 else
   echo "--- NO SOURCES PANEL: treat this as unsourced. Do not quote it onward as fact. ---"

@@ -149,23 +149,25 @@ doctor() {
   case "$chosen" in
     app)
       if ! CLI=$(find_cli); then echo "FAIL  helper missing, run --install-cli"; return 1; fi
-      if "$CLI" dump 2>&1 | grep -qE '^\[windows\] count=[1-9]'; then
+      # Captured once: see the pipefail note in pplx-ask.sh.
+      DUMP="$("$CLI" dump 2>&1)"
+      if grep -qE '^\[windows\] count=[1-9]' <<<"$DUMP"; then
         echo "PASS  the app is running with a window"
       else
         echo "WARN  the app has no window; the ask script will reopen it in the background"
       fi
-      if "$CLI" dump 2>&1 | grep -qiE '\[AXButton\] desc=(Sign in|Log in|Sign up|Continue with)'; then
+      if grep -qiE '\[AXButton\] desc=(Sign in|Log in|Sign up|Continue with)' <<<"$DUMP"; then
         echo "FAIL  the app looks signed out, the user signs in themselves, by hand,"
         echo "      then rerun. This skill never signs in on anyone's behalf."; ok=1
       else
         echo "PASS  no sign-in screen detected"
       fi
-      if "$CLI" dump 2>&1 | grep -qE '\[AXTextArea\]'; then
+      if grep -qE '\[AXTextArea\]' <<<"$DUMP"; then
         echo "PASS  the composer is reachable"
       else
         echo "FAIL  the composer is not reachable, open the app once, then rerun"; ok=1
       fi
-      if "$CLI" dump 2>&1 | grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On'; then
+      if grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On' <<<"$DUMP"; then
         echo "FAIL  an agent mode is ON, it spends paid credits; switch to Search"; ok=1
       else
         echo "PASS  no credit-spending mode is active"
@@ -187,6 +189,10 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --path)
       [ $# -ge 2 ] || { echo "--path takes 'app' or 'browser'" >&2; exit 1; }
+      case "$2" in
+        app|browser) ;;
+        *) echo "--path takes 'app' or 'browser'" >&2; exit 1 ;;
+      esac
       CHOICE="$2"; shift 2 ;;
     --install-cli) DO_INSTALL=1; shift ;;
     --doctor) doctor; exit $? ;;

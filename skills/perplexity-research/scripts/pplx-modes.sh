@@ -30,7 +30,7 @@ case "$PPLX" in
 esac
 
 DUMP="$("$PPLX" dump 2>&1)"
-if ! printf '%s' "$DUMP" | grep -qE '^\[windows\] count=[1-9]'; then
+if ! grep -qE '^\[windows\] count=[1-9]' <<<"$DUMP"; then
   open -g -a "Perplexity" >/dev/null 2>&1 || true
   sleep 3
   DUMP="$("$PPLX" dump 2>&1)"
@@ -55,7 +55,7 @@ if [ -n "$OTHER" ]; then
 fi
 
 echo
-if printf '%s' "$DUMP" | grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On'; then
+if grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On' <<<"$DUMP"; then
   echo "  !! An agent mode is ON. It spends paid credits. Switch to Search before asking."
 else
   echo "  Agent modes are off. Plain Search costs nothing beyond the existing plan."

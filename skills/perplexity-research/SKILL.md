@@ -40,8 +40,9 @@ Detail is for when detail changes something, not a default setting.
    `scripts/pplx-setup.sh --path app|browser`, or on Windows
    `scripts/pplx-setup.ps1 -Path browser`. The script checks what is actually
    installed, reports what is missing, and writes the config. With no usable
-   shell at all, write the config file yourself, it is two lines, `path=app`
-   or `path=browser` under a comment.
+   shell at all, write the config file yourself: a comment line and `path=app`
+   or `path=browser`, plus a `cli=` line on the app path recording where the
+   helper lives.
 5. Re-ask only when the chosen path fails twice in a row, and offer the other
    one rather than retrying a third time.
 
@@ -135,7 +136,7 @@ once, by hand. There is nothing for this skill to authenticate.
   extracting their session is a different thing and is out of bounds.
 - If the app or page is signed out, say so and ask the user to sign in
   themselves. Do not work around it.
-- Store nothing about the user beyond the two-line path config.
+- Store nothing about the user beyond that small path config.
 
 ## Money: ask first, then wait for a yes
 

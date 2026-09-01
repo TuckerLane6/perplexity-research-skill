@@ -21,6 +21,9 @@ user first, and proceeds only on an explicit yes to that run.
 # 1. What is available on this machine? (read-only; also prints which path to recommend)
 skills/perplexity-research/scripts/pplx-setup.sh
 
+# 1b. On macOS, build the desktop helper once (needs Go and git). Skip on Windows/Linux.
+skills/perplexity-research/scripts/pplx-setup.sh --install-cli
+
 # 2. Ask which path they want, OFFERING THE APP FIRST, then record it
 skills/perplexity-research/scripts/pplx-setup.sh --path app      # recommended default (macOS)
 skills/perplexity-research/scripts/pplx-setup.sh --path browser  # fallback, any OS
@@ -89,6 +92,7 @@ under Git Bash or WSL. With no shell at all, write the config file yourself at
 | 0 | answer printed on stdout |
 | 1 | setup problem, helper missing, app has no window, composer unreachable |
 | 2 | the answer did not finish inside the wait window; the thread still exists in the app |
+| 4 | stopped: this thread's answer could not be isolated, so nothing was printed |
 | 3 | stopped before spending: either a credit-spending mode was active, or the free Search mode could not be confirmed. The message says which |
 
 Treat 3 as "go ask the user", not a retry. If a paid mode was active: ask, and
