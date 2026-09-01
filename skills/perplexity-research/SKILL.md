@@ -9,6 +9,9 @@ Runs on the user's own Perplexity account. Costs nothing beyond what a plain
 search on that account already costs. Setup details and troubleshooting:
 `references/SETUP.md`.
 
+Ask questions the way a person would, and report answers back in plain English.
+Detail is for when detail changes something, not a default setting.
+
 ## Pick the path once, then remember it
 
 1. Read the config file first:
@@ -36,18 +39,31 @@ search on that account already costs. Setup details and troubleshooting:
 
 ## Ask a question
 
-5. Write the question so the answer can be graded: ask for verbatim quotes,
-   who said them, the URLs, and the dates. An uncited answer cannot be checked
-   and should not be quoted onward as fact.
-6. **App path:** run `scripts/pplx-ask.sh "your question" [max_wait_seconds]`.
+5. **Ask it the way a person would.** Write the question you would put to a
+   well-read colleague: plain words, one clear ask, no preamble. Length is not
+   rigour — an over-specified question comes back padded and harder to check.
+6. Add a detail only when it changes the answer: a timeframe, a place, a field,
+   or who you want to hear from (practitioners rather than vendors, say). Skip
+   role-play framing, formatting demands, and restating the obvious.
+7. Ask for sources when the answer will be used for something — who said it,
+   where, and when. That is the one demand always worth its words, because an
+   uncited answer cannot be checked.
+8. **Write the answer back in plain English.** Say what it means in ordinary
+   words. Spell out an acronym or a technical term the first time it appears,
+   and say what a number actually measures rather than quoting it bare. If a
+   reader outside the field would stall on a sentence, rewrite it.
+9. Keep it short by leaving things out, not by compressing sentences into
+   fragments, arrows, or shorthand. A few plain sentences beat a wall of
+   bullets; paste the whole thread only when someone needs the whole thread.
+10. **App path:** run `scripts/pplx-ask.sh "your question" [max_wait_seconds]`.
    It sets the composer, submits, waits for the answer to finish, and prints
    it. It never types keystrokes, never activates the app, and never touches
    the clipboard, so the user can keep working while it runs.
-7. **Browser path:** drive `https://www.perplexity.ai` with whatever browser
+11. **Browser path:** drive `https://www.perplexity.ai` with whatever browser
    automation this session has. Open a new tab rather than reusing one the
    user is working in. Type into the composer, submit with the composer's own
    submit button, then poll until the answer stops growing before reading it.
-8. Treat every returned claim as a claim, not a fact: check the citation
+12. Treat every returned claim as a claim, not a fact: check the citation
    exists and says what the answer says it says, before acting on it.
 
 ## Choose the mode and the model on purpose
@@ -56,12 +72,12 @@ Leaving everything on auto wastes a strong model on trivia and sends a hard
 question to a fast one. Choose deliberately — but choose from what this account
 actually offers today.
 
-9. **Read the lineup, never hardcode it.** Run `scripts/pplx-modes.sh --models`
+13. **Read the lineup, never hardcode it.** Run `scripts/pplx-modes.sh --models`
    and pick from what it prints. Perplexity's own documentation says the model
    selector in the app is the source of truth for an account, because models are
    added and retired continuously — so any list written into a skill file is
    wrong within weeks, and wrong in a way that reads as authoritative.
-10. **Route on the axes that survive renames, not on names.** Three have held
+14. **Route on the axes that survive renames, not on names.** Three have held
     across every lineup change:
     - **Mode** — Search or Deep Research. This changes the answer far more than
       swapping one frontier model for another, so spend the decision here first.
@@ -69,7 +85,7 @@ actually offers today.
       have it always on, some optional, some not at all.
     - **Provider family** — only when it genuinely matters, which is mainly
       disagreement (below).
-11. **Match the task class to those axes:**
+15. **Match the task class to those axes:**
     - A single fact, a date, a version, "does X exist" → Search, Thinking off,
       the automatic default. Never Deep Research.
     - Synthesis, comparisons, tradeoffs → Search with Thinking on; Deep Research
@@ -81,18 +97,18 @@ actually offers today.
       the worst tool here, because it launders weak sources into fluent prose.
     - A long document or uploaded file → the mode that accepts documents, and
       mind that file uploads are metered separately.
-12. **When the model you wanted is not in the picker, fall back to the automatic
+16. **When the model you wanted is not in the picker, fall back to the automatic
     option and say so.** Never substitute a guessed name: a name that no longer
     exists selects nothing, and a silent fallback turns a "deep" request into a
     fast answer nobody notices.
-13. **Never select a tier-gated row.** Pickers list models above the current plan
+17. **Never select a tier-gated row.** Pickers list models above the current plan
     to advertise them. Selecting one is an upgrade prompt, not a capability.
-14. **Put the picker back** to what it was. A person shares this account.
-15. **Deep Research is chosen by the shape of the deliverable** — a multi-section
+18. **Put the picker back** to what it was. A person shares this account.
+19. **Deep Research is chosen by the shape of the deliverable** — a multi-section
     report someone will read and cite — not by how hard the question feels. A
     hard question with a one-line answer is still a Search. Permission to run one
     is covered below, under money.
-16. **Check the citations before repeating anything.** Sourced-looking answers
+20. **Check the citations before repeating anything.** Sourced-looking answers
     from research agents as a class have been measured citing sources that do not
     support the claim, so open the source and read it before a claim from here
     becomes a fact in your work.
@@ -113,36 +129,36 @@ once, by hand. There is nothing for this skill to authenticate.
 
 ## Never spend the user's money
 
-17. Use plain Search mode. Before submitting in a browser, confirm the composer
+21. Use plain Search mode. Before submitting in a browser, confirm the composer
    is in Search mode — some Perplexity composers default to an agent mode that
    consumes paid credits.
-18. Abort and report if a submission lands on a URL containing `/computer/`, or
+22. Abort and report if a submission lands on a URL containing `/computer/`, or
     on any other agent-mode session. Do not retry it.
-19. Never click "Add credits", never start a subscription or upgrade flow, and
+23. Never click "Add credits", never start a subscription or upgrade flow, and
     never select a mode or model marked as a higher tier than the user's plan.
     Those are the user's purchasing decisions, not the session's.
-20. Deep Research draws on a quota the user shares with their own usage, and
+24. Deep Research draws on a quota the user shares with their own usage, and
     consumer plans do not publish how much of it is left — so neither the session
     nor the user can measure it. Say you are about to run one and get a yes
     first. Plain searches need no permission.
 
 ## Never leak the user's data
 
-21. A question is an outbound message. Never put credentials, API keys, private
+25. A question is an outbound message. Never put credentials, API keys, private
     customer records, contract terms, or anything under an agreement into one.
-22. Before pointing Perplexity's folder or file context at a directory, check
+26. Before pointing Perplexity's folder or file context at a directory, check
     what is in that directory. Point it at a purpose-built folder holding only
     material that is safe to share, never at a whole working repository, which
     normally holds keys and private files.
-23. Leave the account as you found it: delete throwaway test threads, and if
+27. Leave the account as you found it: delete throwaway test threads, and if
     you change the model or mode selector, set it back.
 
 ## When it does not work
 
-24. App path, nothing comes back: run the helper's dump command and look for
+28. App path, nothing comes back: run the helper's dump command and look for
     the answer text in the accessibility tree. `references/SETUP.md` has the
     exact commands and the known failure shapes.
-25. Browser path, the answer looks truncated: the page streams, so poll until
+29. Browser path, the answer looks truncated: the page streams, so poll until
     the text stops changing rather than reading once.
-26. Either path, twice failed: tell the user plainly what failed and offer the
+30. Either path, twice failed: tell the user plainly what failed and offer the
     other path. Do not keep retrying the same broken route.
