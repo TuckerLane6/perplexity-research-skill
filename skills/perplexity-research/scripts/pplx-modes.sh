@@ -19,6 +19,16 @@ if [ -z "$PPLX" ] || [ ! -x "$PPLX" ]; then
   else echo "Desktop helper not found; see references/SETUP.md." >&2; exit 1; fi
 fi
 
+# The helper path comes from a hand-editable config file, and this script then
+# runs it. Accept it only from the usual install locations so a stray edit to
+# that file cannot turn into arbitrary execution.
+case "$PPLX" in
+  "$HOME/.local/bin/"*|/usr/local/bin/*|/opt/homebrew/bin/*) ;;
+  *) echo "Refusing to run a helper from an unexpected location: $PPLX" >&2
+     echo "Expected it under ~/.local/bin, /usr/local/bin or /opt/homebrew/bin." >&2
+     exit 1 ;;
+esac
+
 DUMP="$("$PPLX" dump 2>&1)"
 if ! printf '%s' "$DUMP" | grep -qE '^\[windows\] count=[1-9]'; then
   open -g -a "Perplexity" >/dev/null 2>&1 || true

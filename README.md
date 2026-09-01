@@ -5,9 +5,10 @@ sourced answer back in the transcript, without copy-pasting between windows.
 
 It runs on your own Perplexity subscription. There is no API key. Plain searches
 cost nothing beyond the plan you already pay for, and anything that would spend
-credits stops and asks you first. The desktop app is the default path, driven in
-the background so it never takes over your screen. A browser path covers machines
-that cannot run the app.
+credits stops and asks you first: the ask script refuses to submit unless it can
+confirm the composer is on the free Search mode. The desktop app is the default
+path, driven in the background so it never takes over your screen. A browser path
+covers machines that cannot run the app.
 
 Works on macOS, Windows and Linux, and in Claude Code, Codex, or any other agent
 that can run a shell command. See [AGENTS.md](AGENTS.md).
@@ -93,8 +94,11 @@ That is the whole connection story. The skill never asks for your password, and
 will refuse it if you offer. It never signs in for you or creates an account. It
 never reads, copies, or stores session cookies or auth tokens: several other
 Perplexity integrations work by exporting your session token to a config file,
-and this one cannot, because it never touches them. The only file it writes is a
-two-line config recording which path you chose and where the helper lives.
+and this one cannot, because it never touches them. In normal use the only file
+it writes is a two-line config recording which path you chose and where the
+helper lives. The one exception is `--install-cli`, which you run deliberately:
+it clones the helper into a temporary directory and builds a binary into
+`~/.local/bin`.
 
 Whichever plan you are on is the plan it uses. Free, Pro, Max and Enterprise all
 work, because the skill reads what your account offers and stays inside it. If
@@ -148,8 +152,10 @@ keys, private records and material under agreement stay out of it. If you want
 local context, point the app at a folder built for sharing rather than at a whole
 repo.
 
-It will not take over your session. No keystrokes, no window activation, and no
-clipboard writes on the normal path. The browser path opens its own tab.
+It will not take over your session. No keystrokes and no window activation. It
+leaves the clipboard alone except in one case: recovering a long answer the app
+truncated, where it borrows the clipboard for about a second and puts the
+previous contents straight back. The browser path opens its own tab.
 
 It will not pass off unsourced text as research. If an answer has no sources
 panel, the skill says so and tells you not to quote it onward.
@@ -181,6 +187,17 @@ Retry once, and if it fails twice, switch to the browser path.
 **Quotas move without warning.** Consumer plans do not publish how much Deep
 Research budget is left, and published limits have been cut mid-subscription
 before. Treat it as scarce and unmeasurable.
+
+## How much of this is enforced
+
+Worth being precise, because the difference matters if you are handing an agent
+your subscription. The mode check is enforced in code: the ask script reads the
+composer's own state and exits rather than submitting when it cannot confirm the
+free mode. The approval itself is not enforceable from a script. `--credits-approved`
+is a flag the agent passes, and nothing but the agent's instructions stops it
+passing that flag without asking you. Treat the gate as a strong default and a
+clear instruction, not as a lock, and read what your agent tells you before you
+say yes.
 
 ## A note on automating a service you log into
 

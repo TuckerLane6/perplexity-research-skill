@@ -65,8 +65,9 @@ Detail is for when detail changes something, not a default setting.
    bullets; paste the whole thread only when someone needs the whole thread.
 11. **App path:** run `scripts/pplx-ask.sh "your question" [max_wait_seconds]`.
     It sets the composer, submits, waits for the answer to finish, and prints
-    it. It never types keystrokes, never activates the app, and never touches
-    the clipboard, so the user can keep working while it runs.
+    it. It never types keystrokes and never activates the app, so the user can
+    keep working while it runs. It leaves the clipboard alone except when
+    recovering a long answer, where it borrows and restores it in about a second.
 12. **Browser path:** drive `https://www.perplexity.ai` with whatever browser
     automation this session has. Open a new tab rather than reusing one the
     user is working in. Type into the composer, submit with the composer's own
@@ -157,7 +158,9 @@ The rule is a gate, not a ban.
     even if the user has approved a paid run, and even if a task stalls for want
     of balance. Say it stalled and let them decide outside the session.
 26. **The scripts fail closed.** `scripts/pplx-ask.sh` stops when the composer is
-    in a credit-spending mode and will only go ahead when passed
+    in a credit-spending mode, and also when it cannot positively confirm the
+    free Search mode, since a renamed button would otherwise let a paid run
+    through unnoticed. Either way it goes ahead only when passed
     `--credits-approved`. Pass that flag only after the user has said yes to
     that specific run. Never pass it to get past an error.
 27. If a submission lands somewhere paid that nobody approved, stop, do not

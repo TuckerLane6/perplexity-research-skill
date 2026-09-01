@@ -4,8 +4,10 @@
 # Runs one plain-Search round in the Perplexity desktop app and prints the answer.
 # Background-safe: it sets the composer through the accessibility API, submits with
 # an accessibility click, and reads the answer back out of the accessibility tree.
-# No keystrokes, no clipboard writes, no window activation, so the person at the
-# keyboard can keep working.
+# No keystrokes and no window activation, so the person at the keyboard can keep
+# working. It does not use the clipboard, except for one case: when a long answer
+# is truncated in the tree it borrows the clipboard for about a second and puts
+# the previous contents straight back.
 #
 # Plain Search by default, which costs nothing beyond the plan. If the composer is
 # in a mode that spends credits, this stops rather than submitting - unless the
@@ -52,6 +54,16 @@ if [ -z "$PPLX" ] || [ ! -x "$PPLX" ]; then
   fi
 fi
 
+# The helper path comes from a hand-editable config file, and this script then
+# runs it. Accept it only from the usual install locations so a stray edit to
+# that file cannot turn into arbitrary execution.
+case "$PPLX" in
+  "$HOME/.local/bin/"*|/usr/local/bin/*|/opt/homebrew/bin/*) ;;
+  *) echo "Refusing to run a helper from an unexpected location: $PPLX" >&2
+     echo "Expected it under ~/.local/bin, /usr/local/bin or /opt/homebrew/bin." >&2
+     exit 1 ;;
+esac
+
 has_window() { "$PPLX" dump 2>&1 | grep -qE '^\[windows\] count=[1-9]'; }
 has_composer() { "$PPLX" dump 2>&1 | grep -qE '\[AXTextArea\]'; }
 
@@ -97,9 +109,18 @@ if printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=(Computer|Control browser)
     exit 3
   fi
 fi
-if ! printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=Search title=- val=On'; then
-  echo "NOTE: could not confirm Search mode is active in this app build; continuing." >&2
-  echo "      If the answer arrives as an agent task, stop and check the composer mode." >&2
+# Not finding a paid mode is not the same as confirming a free one. If the app
+# renames its buttons, both checks miss, and continuing would submit blind into
+# whatever mode is actually selected. Fail closed: require positive confirmation
+# of Search, or an explicit approval, before spending anything.
+SEARCH_CONFIRMED=0
+printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=Search title=- val=On' && SEARCH_CONFIRMED=1
+if [ "$SEARCH_CONFIRMED" != 1 ] && [ "$CREDITS_APPROVED" != 1 ]; then
+  echo "STOPPED: could not confirm the composer is in Search mode." >&2
+  echo "This build may name its mode buttons differently, so the run could be" >&2
+  echo "submitting into a mode that spends credits. Check the composer in the app." >&2
+  echo "If it is on Search, or the user accepts the cost, re-run with --credits-approved." >&2
+  exit 3
 fi
 
 printf '%s' "$Q" | "$PPLX" set-input || { echo "Could not write the question into the composer." >&2; exit 1; }
@@ -251,4 +272,10 @@ else
   echo "--- NO SOURCES PANEL: treat this as unsourced. Do not quote it onward as fact. ---"
 fi
 echo "--- read via: $SOURCE_OF_TEXT ---"
-echo "--- answered on the user's own Perplexity account, plain Search, no credits spent ---"
+if [ "$SEARCH_CONFIRMED" = 1 ] && [ "$CREDITS_APPROVED" != 1 ]; then
+  echo "--- ran as plain Search on the user's own account: no credits spent ---"
+elif [ "$CREDITS_APPROVED" = 1 ]; then
+  echo "--- ran with --credits-approved: this may have spent credits. Tell the user. ---"
+else
+  echo "--- mode could not be confirmed: do not claim this was free. Check the app. ---"
+fi

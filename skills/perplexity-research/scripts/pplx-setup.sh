@@ -8,6 +8,8 @@
 #   pplx-setup.sh --doctor        # prove the recorded path actually works right now
 #
 # Writes: ${XDG_CONFIG_HOME:-$HOME/.config}/perplexity-research-skill/config
+#         and, only with --install-cli, $HOME/.local/bin/pplx plus a build
+#         directory under $TMPDIR
 # Everything is per-machine. Nothing here is specific to any one user or repo.
 set -uo pipefail
 
@@ -30,6 +32,10 @@ PLATFORM="$(platform)"
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/perplexity-research-skill"
 CONFIG="$CONFIG_DIR/config"
 CLI_UPSTREAM="https://github.com/toby1991/pplx-cli"
+# Pinned so an upstream change cannot compile onto your machine unreviewed. This
+# helper is granted macOS Accessibility permission, so it can read any window;
+# that is worth pinning for. Bump it deliberately after reading the diff.
+CLI_COMMIT="4acbf43ac192b527207e1c89eaada6ccc360a2b9"
 
 find_cli() {
   if command -v pplx >/dev/null 2>&1; then command -v pplx; return 0; fi
@@ -99,10 +105,15 @@ install_cli() {
   [ -e "$SRC" ] && rm -rf "$SRC"
 
   echo "Cloning $CLI_UPSTREAM into $SRC and building it with Go."
-  echo "That is third-party open-source code; read it there if you would rather not."
-  git clone --depth 1 "$CLI_UPSTREAM" "$SRC" || { echo "clone failed"; exit 1; }
+  echo "That is third-party open-source code, pinned to commit ${CLI_COMMIT:0:12}."
+  echo "Read it there if you would rather not build it."
+  git clone --quiet "$CLI_UPSTREAM" "$SRC" || { echo "clone failed"; exit 1; }
+  ( cd "$SRC" && git checkout --quiet "$CLI_COMMIT" ) || {
+    echo "Could not check out the pinned commit $CLI_COMMIT."
+    echo "Upstream may have rewritten history. Review the repo before changing the pin."
+    exit 1; }
   mkdir -p "$HOME/.local/bin"
-  ( cd "$SRC" && go build -o "$HOME/.local/bin/pplx" . ) || {
+  ( cd "$SRC" && GOFLAGS=-mod=readonly go build -o "$HOME/.local/bin/pplx" . ) || {
     echo "Build failed. The upstream helper may need its bundle id and URL scheme updated"
     echo "for your app version, see references/SETUP.md."
     exit 1; }
