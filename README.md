@@ -14,7 +14,7 @@ shell command — see [AGENTS.md](AGENTS.md).
 ## Install
 
 ```bash
-git clone https://github.com/tucker8645/perplexity-research-skill.git
+git clone https://github.com/TuckerLane6/perplexity-research-skill.git
 cp -r perplexity-research-skill/skills/perplexity-research ~/.claude/skills/
 chmod +x ~/.claude/skills/perplexity-research/scripts/*.sh
 ```
