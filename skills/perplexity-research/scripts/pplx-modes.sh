@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # pplx-modes.sh: report what the app's composer is set to right now, and what
-# models it is offering. Read-only: it selects nothing and submits nothing.
+# models it is offering. It never submits a question and never changes a setting.
 #
-#   pplx-modes.sh            # modes only (fast, never touches the UI)
-#   pplx-modes.sh --models   # also try to open the model picker and list it
+#   pplx-modes.sh            # modes only: reads the tree, touches nothing
+#   pplx-modes.sh --models   # ALSO CLICKS: opens the model picker, reads it, and
+#                            # closes it again by reselecting what was already
+#                            # selected. Two clicks in an app the user may be
+#                            # looking at. No mode or model is changed.
 #
 # Model lineups change every few weeks, so this reads the picker instead of
 # carrying a list that would go stale. What it prints is what this account can
@@ -22,12 +25,47 @@ fi
 # The helper path comes from a hand-editable config file, and this script then
 # runs it. Accept it only from the usual install locations so a stray edit to
 # that file cannot turn into arbitrary execution.
-case "$PPLX" in
-  "$HOME/.local/bin/"*|/usr/local/bin/*|/opt/homebrew/bin/*) ;;
-  *) echo "Refusing to run a helper from an unexpected location: $PPLX" >&2
-     echo "Expected it under ~/.local/bin, /usr/local/bin or /opt/homebrew/bin." >&2
-     exit 1 ;;
-esac
+#
+# Resolve the path before judging it. A prefix match on the raw string is not a
+# location check: "$HOME/.local/bin/../../../evil/pwned" starts with an allowed
+# prefix and points somewhere else entirely, and a symlink dropped into an
+# allowed directory does the same. Follow symlinks, resolve the directory
+# physically, then compare whole directories. The allowed directories are
+# resolved too, so an installation where one of them is itself a symlink still
+# matches.
+resolve_helper() {
+  local p="$1" target dir hops=0
+  while [ -L "$p" ] && [ "$hops" -lt 40 ]; do
+    hops=$((hops + 1))
+    target="$(readlink "$p")"
+    case "$target" in
+      /*) p="$target" ;;
+      *)  p="$(dirname "$p")/$target" ;;
+    esac
+  done
+  dir="$(cd -P "$(dirname "$p")" 2>/dev/null && pwd -P)" || return 1
+  [ -n "$dir" ] || return 1
+  printf '%s/%s\n' "$dir" "$(basename "$p")"
+}
+
+helper_allowed() {
+  local resolved allowed real
+  resolved="$(resolve_helper "$1")" || return 1
+  resolved="$(dirname "$resolved")"
+  for allowed in "$HOME/.local/bin" /usr/local/bin /opt/homebrew/bin; do
+    real="$(cd -P "$allowed" 2>/dev/null && pwd -P)" || continue
+    [ "$resolved" = "$real" ] && return 0
+  done
+  return 1
+}
+
+if ! helper_allowed "$PPLX"; then
+  echo "Refusing to run a helper from an unexpected location: $PPLX" >&2
+  echo "Expected it in ~/.local/bin, /usr/local/bin or /opt/homebrew/bin." >&2
+  echo "A path that only starts with one of those, or a symlink pointing out of" >&2
+  echo "them, is refused too: what counts is where the file actually is." >&2
+  exit 1
+fi
 
 DUMP="$("$PPLX" dump 2>&1)"
 if ! grep -qE '^\[windows\] count=[1-9]' <<<"$DUMP"; then

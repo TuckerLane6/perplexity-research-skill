@@ -69,12 +69,47 @@ fi
 # The helper path comes from a hand-editable config file, and this script then
 # runs it. Accept it only from the usual install locations so a stray edit to
 # that file cannot turn into arbitrary execution.
-case "$PPLX" in
-  "$HOME/.local/bin/"*|/usr/local/bin/*|/opt/homebrew/bin/*) ;;
-  *) echo "Refusing to run a helper from an unexpected location: $PPLX" >&2
-     echo "Expected it under ~/.local/bin, /usr/local/bin or /opt/homebrew/bin." >&2
-     exit 1 ;;
-esac
+#
+# Resolve the path before judging it. A prefix match on the raw string is not a
+# location check: "$HOME/.local/bin/../../../evil/pwned" starts with an allowed
+# prefix and points somewhere else entirely, and a symlink dropped into an
+# allowed directory does the same. Follow symlinks, resolve the directory
+# physically, then compare whole directories. The allowed directories are
+# resolved too, so an installation where one of them is itself a symlink still
+# matches.
+resolve_helper() {
+  local p="$1" target dir hops=0
+  while [ -L "$p" ] && [ "$hops" -lt 40 ]; do
+    hops=$((hops + 1))
+    target="$(readlink "$p")"
+    case "$target" in
+      /*) p="$target" ;;
+      *)  p="$(dirname "$p")/$target" ;;
+    esac
+  done
+  dir="$(cd -P "$(dirname "$p")" 2>/dev/null && pwd -P)" || return 1
+  [ -n "$dir" ] || return 1
+  printf '%s/%s\n' "$dir" "$(basename "$p")"
+}
+
+helper_allowed() {
+  local resolved allowed real
+  resolved="$(resolve_helper "$1")" || return 1
+  resolved="$(dirname "$resolved")"
+  for allowed in "$HOME/.local/bin" /usr/local/bin /opt/homebrew/bin; do
+    real="$(cd -P "$allowed" 2>/dev/null && pwd -P)" || continue
+    [ "$resolved" = "$real" ] && return 0
+  done
+  return 1
+}
+
+if ! helper_allowed "$PPLX"; then
+  echo "Refusing to run a helper from an unexpected location: $PPLX" >&2
+  echo "Expected it in ~/.local/bin, /usr/local/bin or /opt/homebrew/bin." >&2
+  echo "A path that only starts with one of those, or a symlink pointing out of" >&2
+  echo "them, is refused too: what counts is where the file actually is." >&2
+  exit 1
+fi
 
 # NOTE: never pipe a dump straight into `grep -q`. With `pipefail` set, grep -q
 # exits on the first match, the writer takes SIGPIPE, and the pipeline reports
@@ -104,9 +139,21 @@ ensure_window || exit 1
 "$PPLX" click "New Session" >/dev/null 2>&1 || true
 sleep 2
 if ! has_composer; then
-  ensure_window || exit 1
-  sleep 1
-  has_composer || { echo "The composer is not reachable. Open the Perplexity app once, then retry." >&2; exit 1; }
+  # Do not rely on ensure_window to recover here. A running app whose window has
+  # been closed still reports `[windows] count=1`, with the application element
+  # standing in for the window, so has_window is satisfied and the reopen inside
+  # ensure_window never fires while the composer is genuinely gone. Ask for the
+  # window back directly instead, then re-check.
+  open -g -a "Perplexity" >/dev/null 2>&1 || true
+  for _ in 1 2 3 4 5; do sleep 2; has_composer && break; done
+  if ! has_composer; then
+    echo "The composer is not reachable. The app is running, but it has no usable" >&2
+    echo "window and a background reopen did not bring one back. Open a window in the" >&2
+    echo "app yourself, by clicking it in the Dock or pressing Command-N in it, then" >&2
+    echo "retry. This can happen after a click lands on the New Session MENU ITEM" >&2
+    echo "rather than the button, which dismisses the window." >&2
+    exit 1
+  fi
 fi
 
 # Credit guard, checked mechanically rather than remembered. The composer's mode
@@ -241,8 +288,22 @@ read_tree() {
 # does not, the tree gave us a fragment and the clipboard is the reliable source.
 # The clipboard belongs to the person at the keyboard, so it is saved first and put
 # straight back, it is borrowed for about a second, never kept.
+#
+# The RETURN CODE says which of these happened, because the caller has to tell the
+# user the truth about their clipboard and cannot see inside this function: it runs
+# inside $( ), so anything assigned to a variable here is discarded.
+#   0  the answer is on stdout, and the previous clipboard was put back
+#   7  the answer is on stdout, but the previous clipboard could NOT be put back
+#   2  skipped: the clipboard's contents could not be read
+#   3  skipped: the clipboard holds something other than plain text
+#   4  skipped: the clipboard could not be saved, so it was not touched
+#   5  skipped: the Copy control would not click, so nothing was copied
+#   6  skipped: the copy came back empty
+# Everything except 0 and 7 means NOTHING WAS COPIED. Reporting those as "the
+# copied text did not match" told people their app was serving other threads when
+# in fact their clipboard held a picture.
 read_clipboard() {
-  local saved answer flavours field
+  local saved answer flavours field restore_failed=0
   # pbpaste and pbcopy only carry plain text. If the clipboard currently holds an
   # image, styled text or files, a save-and-restore round trip would silently
   # replace it with plain text or nothing. Losing someone's clipboard is worse
@@ -261,8 +322,8 @@ read_clipboard() {
   # clipboard on earth fails it.
   flavours="$(osascript -e 'clipboard info' 2>/dev/null)" || {
     echo "NOTE: could not read the clipboard's contents, so it was left alone." >&2
-    return 1; }
-  [ -n "$flavours" ] || return 1
+    return 2; }
+  [ -n "$flavours" ] || return 2
   while IFS= read -r field; do
     field="$(printf '%s' "$field" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
     case "$field" in
@@ -273,7 +334,7 @@ read_clipboard() {
       ''|string|"Unicode text"|"«class utf8»"|"«class ut16»"|"«class TEXT»") ;;
       *) echo "NOTE: the clipboard holds something other than plain text ($field)," >&2
          echo "      so it was left alone and the long-answer fallback was skipped." >&2
-         return 1 ;;
+         return 3 ;;
     esac
   done <<EOF
 $(printf '%s' "$flavours" | tr ',' '\n')
@@ -282,17 +343,28 @@ EOF
   # put it back is the exact loss this function exists to prevent. Say so out loud
   # rather than swallowing it: silently handing someone's clipboard to a different
   # thread's text is the worst outcome available here.
-  saved="$(pbpaste 2>/dev/null)" || {
+  #
+  # Check that the clipboard can be read BEFORE capturing it, because the capture
+  # below cannot report a failure: it ends in printf, so the exit status is
+  # printf's. The trailing X is a sentinel. Command substitution strips trailing
+  # newlines, so "$(pbpaste)" alone silently shortens any clipboard ending in a
+  # blank line, and putting that back is not putting it back.
+  pbpaste >/dev/null 2>&1 || {
     echo "NOTE: the clipboard could not be saved, so it was left alone." >&2
-    return 1; }
-  "$PPLX" click "Copy" >/dev/null 2>&1 || return 1
+    return 4; }
+  saved="$(pbpaste 2>/dev/null; printf 'X')"
+  saved="${saved%X}"
+  "$PPLX" click "Copy" >/dev/null 2>&1 || return 5
   sleep 1
   answer="$(pbpaste 2>/dev/null || true)"
   printf '%s' "$saved" | pbcopy 2>/dev/null || {
+    restore_failed=1
     echo "WARNING: the clipboard could not be put back. It now holds the copied" >&2
     echo "         answer, not what was there before. Copy something to clear it." >&2; }
-  [ -n "$answer" ] || return 1
+  [ -n "$answer" ] || return 6
   printf '%s\n' "$answer"
+  [ "$restore_failed" = 1 ] && return 7
+  return 0
 }
 
 # A copied blob is only trustworthy if it is THIS answer. There can be more than
@@ -332,6 +404,24 @@ for _ in 1 2 3 4 5; do
   ANSWER="$NEXT"
 done
 SOURCE_OF_TEXT="accessibility tree, clipboard untouched"
+
+# The question was found but nothing followed it: the answer region is empty. This
+# is a real state, not a contrived one, because the wait loop above breaks as soon
+# as ANY Copy control exists, and a leftover Copy control from the previous thread
+# satisfies it before the new answer renders.
+#
+# There is no answer here to be truncated. Calling it truncated and exiting 0 hands
+# the caller boilerplate where the reply should be and tells it everything went
+# fine. Exit 2, the code that already means "not finished, the thread is still in
+# the app, check back".
+case "$(printf '%s' "$ANSWER" | tr -d '[:space:]')" in
+  "")
+    echo "NOT-FINISHED: the thread was located but its answer region is still empty," >&2
+    echo "so the app had not rendered any of the answer yet. Nothing printed. The" >&2
+    echo "thread is in the app; retry, or re-read it there." >&2
+    exit 2 ;;
+esac
+
 # The app appends an object-replacement glyph where an inline citation marker
 # sits, so strip that (and trailing space) before judging whether the text ends
 # on sentence punctuation, otherwise a complete answer reads as truncated.
@@ -339,15 +429,37 @@ LAST_LINE="$(printf '%s' "$ANSWER" | tail -1 | sed -e 's/\xef\xbf\xbc//g' -e 's/
 case "$LAST_LINE" in
   *[.!?\"\)\]:]|*：|*。) : ;;                     # ends on sentence punctuation: complete
   *)
-    if FULL="$(read_clipboard)" && copy_matches_this_answer "$FULL" "$ANSWER"; then
-      ANSWER="$FULL"
-      SOURCE_OF_TEXT="clipboard (the tree held only a fragment); previous clipboard restored"
-    else
-      SOURCE_OF_TEXT="accessibility tree, TRUNCATED, and the copied text did not match this thread, so it was discarded"
-      ANSWER="$ANSWER
+    # Report what actually happened. Four different outcomes used to print the same
+    # sentence about a copy that did not match, including the cases where nothing
+    # was ever copied at all.
+    FULL="$(read_clipboard)"; CLIP_RC=$?
+    case "$CLIP_RC" in
+      0|7)
+        RESTORE_NOTE="previous clipboard restored"
+        [ "$CLIP_RC" = 7 ] && RESTORE_NOTE="WARNING: the previous clipboard could NOT be put back and now holds this answer"
+        if copy_matches_this_answer "$FULL" "$ANSWER"; then
+          ANSWER="$FULL"
+          SOURCE_OF_TEXT="clipboard (the tree held only a fragment); $RESTORE_NOTE"
+        else
+          SOURCE_OF_TEXT="accessibility tree, TRUNCATED. A copy was taken but its text did not belong to this thread, so it was discarded; $RESTORE_NOTE"
+          ANSWER="$ANSWER
 [TRUNCATED: the app exposed only the start of this answer. Open the thread in the
 app to read the rest, or ask a narrower question that fits a short reply.]"
-    fi ;;
+        fi ;;
+      *)
+        case "$CLIP_RC" in
+          2) WHY="the clipboard's contents could not be read" ;;
+          3) WHY="the clipboard holds something other than plain text" ;;
+          4) WHY="the clipboard could not be saved" ;;
+          5) WHY="the Copy control would not click" ;;
+          6) WHY="the copy came back empty" ;;
+          *) WHY="the fallback did not run" ;;
+        esac
+        SOURCE_OF_TEXT="accessibility tree, TRUNCATED. Nothing was copied and the clipboard was not touched, because $WHY"
+        ANSWER="$ANSWER
+[TRUNCATED: the app exposed only the start of this answer. Open the thread in the
+app to read the rest, or ask a narrower question that fits a short reply.]" ;;
+    esac ;;
 esac
 printf '%s\n' "$ANSWER"
 

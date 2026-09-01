@@ -40,11 +40,38 @@ CLI_COMMIT="4acbf43ac192b527207e1c89eaada6ccc360a2b9"
 # Only these locations count. The ask and modes scripts refuse a helper from
 # anywhere else, so setup must not find, run, or record one either: a config
 # pointing outside the list would pass here and be rejected there.
+#
+# Resolve the path before judging it. A prefix match on the raw string is not a
+# location check: "$HOME/.local/bin/../../../evil/pwned" starts with an allowed
+# prefix and points somewhere else entirely, and a symlink dropped into an
+# allowed directory does the same. Follow symlinks, resolve the directory
+# physically, then compare whole directories. The allowed directories are
+# resolved too, so an installation where one of them is itself a symlink still
+# matches.
+resolve_helper() {
+  local p="$1" target dir hops=0
+  while [ -L "$p" ] && [ "$hops" -lt 40 ]; do
+    hops=$((hops + 1))
+    target="$(readlink "$p")"
+    case "$target" in
+      /*) p="$target" ;;
+      *)  p="$(dirname "$p")/$target" ;;
+    esac
+  done
+  dir="$(cd -P "$(dirname "$p")" 2>/dev/null && pwd -P)" || return 1
+  [ -n "$dir" ] || return 1
+  printf '%s/%s\n' "$dir" "$(basename "$p")"
+}
+
 cli_allowed() {
-  case "$1" in
-    "$HOME/.local/bin/"*|/usr/local/bin/*|/opt/homebrew/bin/*) return 0 ;;
-    *) return 1 ;;
-  esac
+  local resolved allowed real
+  resolved="$(resolve_helper "$1")" || return 1
+  resolved="$(dirname "$resolved")"
+  for allowed in "$HOME/.local/bin" /usr/local/bin /opt/homebrew/bin; do
+    real="$(cd -P "$allowed" 2>/dev/null && pwd -P)" || continue
+    [ "$resolved" = "$real" ] && return 0
+  done
+  return 1
 }
 
 find_cli() {
@@ -56,6 +83,22 @@ find_cli() {
     [ -x "$c" ] && { echo "$c"; return 0; }
   done
   return 1
+}
+
+# The helper the ask and modes scripts will ACTUALLY run, resolved in their order:
+# the config's cli= line wins when it points at something executable, and only
+# then does the search fall back to PATH and the known locations.
+#
+# doctor has to test that exact binary. Testing find_cli() instead let it report
+# four passes against a working helper while every real question ran a different,
+# broken one recorded in cli=, which is the opposite of what a doctor is for.
+ask_cli() {
+  local from_config=""
+  [ -f "$CONFIG" ] && from_config="$(grep -E '^cli=' "$CONFIG" 2>/dev/null | cut -d= -f2- | tr -d '\r')"
+  if [ -n "$from_config" ] && [ -x "$from_config" ]; then
+    printf '%s\n' "$from_config"; return 0
+  fi
+  find_cli
 }
 
 find_app() {
@@ -148,7 +191,15 @@ doctor() {
 
   case "$chosen" in
     app)
-      if ! CLI=$(find_cli); then echo "FAIL  helper missing, run --install-cli"; return 1; fi
+      if ! CLI=$(ask_cli); then echo "FAIL  helper missing, run --install-cli"; return 1; fi
+      if ! cli_allowed "$CLI"; then
+        echo "FAIL  the recorded helper is somewhere the ask script refuses to run it:"
+        echo "      $CLI"
+        echo "      Expected it in ~/.local/bin, /usr/local/bin or /opt/homebrew/bin."
+        echo "      Fix the cli= line in $CONFIG, or rerun --install-cli."
+        return 1
+      fi
+      echo "Testing:         $CLI"
       # Captured once: see the pipefail note in pplx-ask.sh.
       DUMP="$("$CLI" dump 2>&1)"
       if grep -qE '^\[windows\] count=[1-9]' <<<"$DUMP"; then

@@ -5,10 +5,12 @@ sourced answer back in the transcript, without copy-pasting between windows.
 
 It runs on your own Perplexity subscription. There is no API key. Plain searches
 cost nothing beyond the plan you already pay for, and anything that would spend
-credits stops and asks you first: the ask script refuses to submit unless it can
-confirm the composer is on the free Search mode. The desktop app is the default
-path, driven in the background so it never takes over your screen. A browser path
-covers machines that cannot run the app.
+credits stops and asks you first: the ask script will not submit unless it can
+confirm the composer is on the free Search mode, and if it cannot confirm that,
+it stops and says so rather than guessing. You can still say yes and re-run, and
+then it submits on your word. The desktop app is the default path, driven in the
+background so it never takes over your screen. A browser path covers machines
+that cannot run the app.
 
 Works on macOS, Windows and Linux, and in Claude Code, Codex, or any other agent
 that can run a shell command. See [AGENTS.md](AGENTS.md).
@@ -97,11 +99,13 @@ That is the whole connection story. The skill never asks for your password, and
 will refuse it if you offer. It never signs in for you or creates an account. It
 never reads, copies, or stores session cookies or auth tokens: several other
 Perplexity integrations work by exporting your session token to a config file,
-and this one cannot, because it never touches them. In normal use the only file
-it writes is a small config recording which path you chose, and on the app path
-where the helper lives. The one exception is `--install-cli`, which you run deliberately:
-it clones the helper into a temporary directory and builds a binary into
-`~/.local/bin`.
+and this one cannot, because it never touches them. The only lasting file it
+writes is a small config recording which path you chose, and on the app path
+where the helper lives. Running a question also leaves short-lived scratch files
+that the shell itself creates and deletes as each check runs; SETUP.md's data
+boundary section says what those hold and why. The one exception is
+`--install-cli`, which you run deliberately: it clones the helper into a
+temporary directory and builds a binary into `~/.local/bin`.
 
 Whichever plan you are on is the plan it uses. Free, Pro, Max and Enterprise all
 work, because the skill reads what your account offers and stays inside it. If
@@ -138,9 +142,14 @@ call, and buying more is not something a session should do for you.
 answers out of the accessibility tree without touching the clipboard. When an
 answer is too long for the tree to hold, it borrows the clipboard for about a
 second, checks that the copied text belongs to the answer it just asked about,
-and puts your previous clipboard straight back. If the copy does not match, it
-gets discarded and the answer is marked truncated, rather than handing you text
-from some other thread.
+and puts your previous clipboard back byte for byte. If the copy does not match,
+it gets discarded and the answer is marked truncated, rather than handing you
+text from some other thread.
+
+It only borrows a clipboard holding plain text and nothing else, so an image, a
+styled selection or a copied file is never round-tripped through a text-only
+save. On the rare occasion it cannot put the clipboard back, it tells you so in
+the run summary instead of reporting success.
 
 ## What it will not do
 
@@ -158,7 +167,10 @@ repo.
 It will not take over your session. No keystrokes and no window activation. It
 leaves the clipboard alone except in one case: recovering a long answer the app
 truncated, where it borrows the clipboard for about a second and puts the
-previous contents straight back. The browser path opens its own tab.
+previous contents straight back. Reading the model list with
+`pplx-modes.sh --models` does click twice, to open the picker and close it again
+on the same selection, which is the one place this reads by clicking rather than
+by looking. The browser path opens its own tab.
 
 It will not pass off unsourced text as research. If an answer has no sources
 panel, the skill says so and tells you not to quote it onward.
