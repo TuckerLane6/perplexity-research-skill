@@ -5,6 +5,7 @@
 #   pplx-setup.sh --path app      # record the desktop-app path
 #   pplx-setup.sh --path browser  # record the browser path
 #   pplx-setup.sh --install-cli   # build the desktop helper from source (needs Go + git)
+#   pplx-setup.sh --doctor        # prove the recorded path actually works right now
 #
 # Writes: ${XDG_CONFIG_HOME:-$HOME/.config}/perplexity-research-skill/config
 # Everything is per-machine. Nothing here is specific to any one user or repo.
@@ -37,6 +38,16 @@ report() {
   else echo "Desktop helper:  not installed (build it with --install-cli, or use the browser path)"; fi
   if [ -f "$CONFIG" ]; then echo "Recorded path:   $(grep -E '^path=' "$CONFIG" | cut -d= -f2)"
   else echo "Recorded path:   none yet — ask the user which they prefer, then rerun with --path"; fi
+
+  # The app path is the recommended default wherever it can run: it works in the
+  # background instead of taking over a browser window the person is using.
+  if [ "$(uname -s)" = "Darwin" ] && find_app >/dev/null; then
+    echo "Recommended:     app  (this machine can run it; offer it first)"
+  elif [ "$(uname -s)" = "Darwin" ]; then
+    echo "Recommended:     app, once the Perplexity desktop app is installed; browser until then"
+  else
+    echo "Recommended:     browser  (the app path needs macOS)"
+  fi
 }
 
 write_config() {
@@ -68,13 +79,54 @@ install_cli() {
   echo "Grant it under System Settings > Privacy & Security > Accessibility."
 }
 
+# --doctor proves the chosen path is actually live right now, instead of trusting
+# that an install done once still works. It reads state only: no question is asked
+# and nothing is submitted.
+doctor() {
+  local ok=0
+  echo "== doctor =="
+  report
+  echo
+  local chosen="none"
+  [ -f "$CONFIG" ] && chosen="$(grep -E '^path=' "$CONFIG" | cut -d= -f2)"
+
+  case "$chosen" in
+    app)
+      if ! CLI=$(find_cli); then echo "FAIL  helper missing — run --install-cli"; return 1; fi
+      if "$CLI" dump 2>&1 | grep -qE '^\[windows\] count=[1-9]'; then
+        echo "PASS  the app is running with a window"
+      else
+        echo "WARN  the app has no window; the ask script will reopen it in the background"
+      fi
+      if "$CLI" dump 2>&1 | grep -qE '\[AXTextArea\]'; then
+        echo "PASS  the composer is reachable"
+      else
+        echo "FAIL  the composer is not reachable — open the app once, then rerun"; ok=1
+      fi
+      if "$CLI" dump 2>&1 | grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On'; then
+        echo "FAIL  an agent mode is ON — it spends paid credits; switch to Search"; ok=1
+      else
+        echo "PASS  no credit-spending mode is active"
+      fi
+      ;;
+    browser)
+      echo "INFO  browser path: this script cannot test it, because the browser is driven"
+      echo "      by the agent's own automation. Check it by opening perplexity.ai in a new"
+      echo "      tab and confirming the composer is in Search mode before the first ask." ;;
+    *)
+      echo "INFO  no path recorded yet — ask the user which they prefer, then --path" ;;
+  esac
+  return $ok
+}
+
 CHOICE=""
 DO_INSTALL=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --path) CHOICE="${2:-}"; shift 2 ;;
     --install-cli) DO_INSTALL=1; shift ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    --doctor) doctor; exit $? ;;
+    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1"; exit 1 ;;
   esac
 done

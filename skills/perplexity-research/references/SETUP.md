@@ -1,7 +1,8 @@
 # Setup and troubleshooting
 
-Two paths do the same job. Pick whichever suits the machine and the person
-using it — the skill asks once and remembers the answer.
+Two paths do the same job. **The desktop app is the default** — it runs in the
+background while the person keeps working. The browser is the fallback for
+machines that cannot run the app. The skill asks once and remembers the answer.
 
 | | Desktop app | Browser |
 |---|---|---|
@@ -9,7 +10,7 @@ using it — the skill asks once and remembers the answer.
 | Extra install | Perplexity app + a small helper built from source | none beyond the browser automation the session already has |
 | One-time permission | macOS Accessibility | whatever the browser tool asks for |
 | Runs in background | yes, the person keeps working | no, it drives a visible browser |
-| Best when | the machine is a Mac and the person is working while research runs | any other case, or when nothing may be installed |
+| Use it when | the machine is a Mac (this is the default) | not macOS, no app installed, or the user asks for it |
 
 ## Browser path
 
@@ -82,6 +83,16 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
   set-value error. The ask script detects this (window count zero, or no text
   area in the tree) and reopens the window with `open -g -a "Perplexity"`, which
   restores it *without* pulling focus away from whatever the person is doing.
+- **Long answers can be truncated in the tree.** The app renders the answer
+  lazily, so the accessibility tree may hold only its first lines. The ask script
+  detects this (the text does not end on sentence punctuation) and borrows the
+  clipboard once as a fallback — saving and restoring what was in it. That
+  fallback is *verified*: more than one Copy control can exist in the tree, and
+  clicking the wrong one returns a completely different thread's text, which is
+  far worse than a short answer because it reads as a genuine reply. The copy is
+  accepted only when it overlaps the fragment already read from this thread;
+  otherwise it is discarded and the answer is labelled TRUNCATED. If you hit this
+  often, ask narrower questions.
 - **The sidebar is in the tree too.** It lists the account's other recent
   threads, so a naive read of every static-text line prints unrelated history
   into the transcript. The open question appears twice — once in that sidebar

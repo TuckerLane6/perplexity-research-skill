@@ -56,6 +56,21 @@ if ! has_composer; then
   has_composer || { echo "The composer is not reachable. Open the Perplexity app once, then retry." >&2; exit 1; }
 fi
 
+# Credit guard, checked mechanically rather than remembered. The composer's mode
+# buttons report their own state in the accessibility tree (val=On / val=Off), so
+# an agent mode that would spend paid credits can be caught BEFORE submitting
+# instead of discovered afterwards on the bill.
+MODES="$("$PPLX" dump 2>&1)"
+if printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On'; then
+  echo "REFUSING TO SUBMIT: the composer is in an agent mode that spends paid credits." >&2
+  echo "Switch it back to Search in the app, then retry." >&2
+  exit 3
+fi
+if ! printf '%s' "$MODES" | grep -qE '\[AXButton\] desc=Search title=- val=On'; then
+  echo "NOTE: could not confirm Search mode is active in this app build; continuing." >&2
+  echo "      If the answer arrives as an agent task, stop and check the composer mode." >&2
+fi
+
 printf '%s' "$Q" | "$PPLX" set-input || { echo "Could not write the question into the composer." >&2; exit 1; }
 sleep 1
 
@@ -86,16 +101,91 @@ fi
 # of the open thread. Everything after its LAST occurrence is this answer, so cut
 # there. The short leftovers after the cut are step labels, dropped by a length
 # floor.
+#
+# Do NOT filter by line length: answers contain short lines (list items, "Yes.",
+# a name, a number) and a length floor silently truncates them. Filter by what the
+# line IS instead — the app's own chrome labels are a small known set.
+read_tree() {
 "$PPLX" dump 2>&1 \
   | grep -E '^\s*\[AXStaticText\]' \
   | sed -E 's/^.*[[:space:]]val=//' \
   | awk -v q="${Q:0:40}" '
+      BEGIN {
+        # UI chrome that sits inside the answer region on some builds
+        noise = "^(MCP Tool|Success|Copy|Share|Answer|Sources|Images|Steps|Show more|Related|Ask a follow-up|Pro|Search|[0-9]+|[[:space:]]*)$"
+      }
       { line[NR] = $0; if (index($0, q) > 0) last = NR }
       END {
-        if (!last) print "(could not locate the question in the thread; showing all long text found)" > "/dev/stderr"
-        for (i = (last ? last + 1 : 1); i <= NR; i++)
-          if (length(line[i]) >= 40 && !seen[line[i]]++) print line[i]
+        if (!last) print "(could not locate the question in the thread; printing everything after it may be incomplete)" > "/dev/stderr"
+        for (i = (last ? last + 1 : 1); i <= NR; i++) {
+          t = line[i]
+          if (t ~ noise) continue
+          if (seen[t]++) continue
+          print t
+        }
       }'
+}
+
+# The app renders the answer lazily, so the accessibility tree can hold only the
+# first part of a long one. A finished answer ends on sentence punctuation; if it
+# does not, the tree gave us a fragment and the clipboard is the reliable source.
+# The clipboard belongs to the person at the keyboard, so it is saved first and put
+# straight back — it is borrowed for about a second, never kept.
+read_clipboard() {
+  local saved answer
+  saved="$(pbpaste 2>/dev/null || true)"
+  "$PPLX" click "Copy" >/dev/null 2>&1 || return 1
+  sleep 1
+  answer="$(pbpaste 2>/dev/null || true)"
+  printf '%s' "$saved" | pbcopy 2>/dev/null || true
+  [ -n "$answer" ] || return 1
+  printf '%s\n' "$answer"
+}
+
+# A copied blob is only trustworthy if it is THIS answer. There can be more than
+# one Copy control in the tree, and clicking the wrong one returns a completely
+# different thread's text — which is far worse than a short answer, because it
+# looks like a real reply to the question that was just asked. So the copy is
+# accepted only when it visibly overlaps the fragment the tree already gave us,
+# and that fragment is known to belong to this thread because it sits after this
+# question.
+copy_matches_this_answer() {
+  local copied="$1" fragment="$2" line
+  while IFS= read -r line; do
+    line="$(printf '%s' "$line" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+    [ "${#line}" -ge 12 ] || continue
+    case "$copied" in *"$line"*) return 0 ;; esac
+  done <<EOF
+$fragment
+EOF
+  return 1
+}
+
+ANSWER="$(read_tree)"
+SOURCE_OF_TEXT="accessibility tree, clipboard untouched"
+LAST_LINE="$(printf '%s' "$ANSWER" | sed -e 's/[[:space:]]*$//' | tail -1)"
+case "$LAST_LINE" in
+  *[.!?\"\)]|*：|*。) : ;;                     # ends on sentence punctuation: complete
+  *)
+    if FULL="$(read_clipboard)" && copy_matches_this_answer "$FULL" "$ANSWER"; then
+      ANSWER="$FULL"
+      SOURCE_OF_TEXT="clipboard (the tree held only a fragment); previous clipboard restored"
+    else
+      SOURCE_OF_TEXT="accessibility tree — TRUNCATED, and the copied text did not match this thread, so it was discarded"
+      ANSWER="$ANSWER
+[TRUNCATED: the app exposed only the start of this answer. Open the thread in the
+app to read the rest, or ask a narrower question that fits a short reply.]"
+    fi ;;
+esac
+printf '%s\n' "$ANSWER"
 
 echo
+# The whole point of asking Perplexity rather than answering from memory is the
+# sourcing, so say plainly whether this answer has any.
+if "$PPLX" dump 2>&1 | grep -qE '\[AXButton\] desc=Sources title='; then
+  echo "--- sources: the thread has a Sources panel; open it in the app to read the list ---"
+else
+  echo "--- NO SOURCES PANEL: treat this as unsourced. Do not quote it onward as fact. ---"
+fi
+echo "--- read via: $SOURCE_OF_TEXT ---"
 echo "--- answered on the user's own Perplexity account, plain Search, no credits spent ---"
