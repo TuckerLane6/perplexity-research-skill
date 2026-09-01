@@ -1,4 +1,4 @@
-# Perplexity research skill for Claude Code
+# Perplexity research skill for Claude Code and Codex
 
 Ask Perplexity a research question from inside a coding session and get the
 sourced answer back in the transcript — no copy-paste between windows.
@@ -25,10 +25,19 @@ than failing halfway through.
 
 ## Install
 
+macOS and Linux:
+
 ```bash
 git clone https://github.com/TuckerLane6/perplexity-research-skill.git
 cp -r perplexity-research-skill/skills/perplexity-research ~/.claude/skills/
 chmod +x ~/.claude/skills/perplexity-research/scripts/*.sh
+```
+
+Windows (PowerShell):
+
+```powershell
+git clone https://github.com/TuckerLane6/perplexity-research-skill.git
+Copy-Item -Recurse perplexity-research-skill\skills\perplexity-research $HOME\.claude\skills\
 ```
 
 Then ask for research in a session:
@@ -126,31 +135,38 @@ some other thread.
 - **Pass off unsourced text as research.** If the answer has no sources panel, it
   says so and tells you not to quote it onward.
 
-## Limits worth knowing before you install
+## Limits worth knowing
 
 - **The app path is macOS only.** The helper drives the desktop app through the
-  macOS accessibility API. On Windows and Linux the browser path is the one that
-  works, and the setup scripts detect the platform and tell you so instead of
-  offering a choice that cannot work.
-- **Long answers can arrive truncated.** The app renders answers lazily, so the
-  accessibility tree sometimes holds only the beginning. The script detects this
-  and says so rather than pretending the fragment is the whole answer. Asking a
-  narrower question is the reliable workaround.
-- **One question at a time.** The app is a single shared surface; there is no
-  parallelism here.
-- **Expect the occasional retry.** Driving a native app through the accessibility
-  API is not a transaction. A run can occasionally fail to submit, or time out
-  with the answer still sitting in the app. The script fails loudly rather than
-  inventing an answer, and it never returns another thread's text as yours. Retry
-  once; if it fails twice, use the browser path.
-- **Automating a service you log into is your call to make.** Perplexity's terms
-  restrict automated access to the service. This skill drives the app you already
-  have open, under your own login, one question at a time, at human pace — which
-  is a materially different thing from exporting session cookies or scraping
-  headlessly, but it is not nothing. Read the terms and decide for yourself.
-- **Quotas move without warning.** Consumer plans do not publish remaining Deep
-  Research budget, and published limits have been cut mid-subscription before.
-  Treat quota as scarce and unmeasurable.
+  macOS accessibility API. On Windows and Linux the browser path does the same
+  job, and the setup scripts detect the platform and say so rather than offering
+  a choice that cannot work.
+- **A very long answer can still come back marked truncated.** The app renders
+  its answer lazily, so the accessibility tree sometimes holds only the first
+  part. The script waits for the text to stop growing, and if it still looks
+  unfinished it borrows the clipboard for about a second — putting back whatever
+  was there — and accepts the copy only when it matches the thread it just asked
+  about. When it cannot confirm that, it labels the answer TRUNCATED instead of
+  guessing. A narrower question is the surest fix.
+- **One question at a time.** The app is a single shared surface. Two asks
+  running at once would read each other's threads, so there is no parallelism
+  here by design.
+- **A run occasionally needs a retry.** Driving a native app through the
+  accessibility API is not a transaction: a submit can miss, or the answer can
+  still be generating when the wait runs out. It fails loudly with an exit code
+  rather than inventing an answer, and it never hands you another thread's text.
+  Retry once; if it fails twice, switch to the browser path.
+- **Quotas move without warning.** Consumer plans do not publish how much Deep
+  Research budget is left, and published limits have been cut mid-subscription
+  before. Treat it as scarce and unmeasurable.
+
+## A note on automating a service you log into
+
+Perplexity's terms restrict automated access to the service. This skill drives
+the app you already have open, under your own login, one question at a time, at
+human pace — a materially different thing from exporting your session cookies or
+scraping headlessly, but it is not nothing. Read the terms and make your own
+call.
 
 ## Requirements
 
