@@ -40,22 +40,43 @@ git clone https://github.com/TuckerLane6/perplexity-research-skill.git
 Copy-Item -Recurse perplexity-research-skill\skills\perplexity-research $HOME\.claude\skills\
 ```
 
+**Using Codex or another agent instead?** There is no skills folder to copy into.
+Clone the repo anywhere and point the agent at [AGENTS.md](AGENTS.md); the scripts
+are plain shell and run from wherever the clone lives.
+
 Then ask for research in a session:
 
 > ask Perplexity what practitioners actually say about X, with sources
 
-The first time, the skill asks which path you want — offering the app first —
-records the answer in `~/.config/perplexity-research-skill/config`, and uses it
-from then on.
+On macOS the skill asks once which path you want, offering the app first, and
+records your answer in `~/.config/perplexity-research-skill/config`. On Windows
+and Linux there is only one workable path, so it says so and uses the browser
+rather than asking a question with a single possible answer.
+
+Run the scripts from the skill directory:
 
 ```bash
-scripts/pplx-setup.sh              # what this machine can run
-scripts/pplx-setup.sh --install-cli # build the desktop helper (needs Go + git)
-scripts/pplx-setup.sh --path app    # record the choice
-scripts/pplx-setup.sh --doctor      # prove the path works right now
-scripts/pplx-modes.sh --models      # current modes + the models this account offers
-scripts/pplx-ask.sh "your question"
+cd ~/.claude/skills/perplexity-research
+
+scripts/pplx-setup.sh                # what this machine can run
+scripts/pplx-setup.sh --install-cli  # build the desktop helper (macOS; needs Go + git)
+scripts/pplx-setup.sh --path app     # record the choice
+scripts/pplx-setup.sh --doctor       # prove the path works right now
+scripts/pplx-modes.sh --models       # current modes + the models this account offers
+scripts/pplx-ask.sh "your question"  # ask (macOS app path)
 ```
+
+On Windows, the same two setup steps in PowerShell:
+
+```powershell
+cd $HOME\.claude\skills\perplexity-research
+scripts\pplx-setup.ps1                  # what this machine can run
+scripts\pplx-setup.ps1 -Path browser    # record the choice
+scripts\pplx-setup.ps1 -Doctor          # check it
+```
+
+Asking itself then happens through the browser your agent already drives, so
+there is no ask script to run on Windows or Linux.
 
 ## How your Perplexity account gets connected
 
@@ -173,8 +194,9 @@ call.
 - Claude Code, Codex, or any agent that can run a shell command
 - A Perplexity account (no API key, no paid API)
 - App path: macOS, the Perplexity desktop app, Go and git to build the helper
-- Browser path: any browser automation your session already has — no shell
-  required at all, since the config is a two-line text file
+- Browser path: any browser automation your session already has. Nothing to
+  install and nothing to build; if a machine has no usable shell, the config is
+  a two-line text file you can write by hand
 
 ## Credits
 
