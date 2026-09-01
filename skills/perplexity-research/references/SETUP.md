@@ -98,6 +98,15 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
   into the transcript. The open question appears twice — once in that sidebar
   list, then again at the top of the thread — so the answer is everything after
   its last occurrence.
+- **App state drifts under repeated automated runs.** Driving a native app
+  through the accessibility API is not a transaction: a "new session" click can
+  fail to take, the app can be left showing an older thread, and the composer can
+  re-render and drop text that was just written. Expect an occasional run to
+  return NOT-FINISHED (exit 2) or to fail submitting. Retry it; if two runs in a
+  row fail, switch to the browser path rather than fighting the app. Every unsafe
+  consequence of this drift is guarded — a copied answer is rejected unless it
+  matches this thread, and an agent mode blocks the submit — but the flakiness
+  itself is inherent, not a bug that can be fully fixed from outside the app.
 - **The upstream answer reader may not work** against a current app build; it
   waits on UI details that build no longer exposes. That is why this skill reads
   the accessibility tree itself rather than calling the helper's own reader.

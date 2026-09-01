@@ -92,6 +92,11 @@ some other thread.
   narrower question is the reliable workaround.
 - **One question at a time.** The app is a single shared surface; there is no
   parallelism here.
+- **Expect the occasional retry.** Driving a native app through the accessibility
+  API is not a transaction. A run can occasionally fail to submit, or time out
+  with the answer still sitting in the app. The script fails loudly rather than
+  inventing an answer, and it never returns another thread's text as yours. Retry
+  once; if it fails twice, use the browser path.
 - **Automating a service you log into is your call to make.** Perplexity's terms
   restrict automated access to the service. This skill drives the app you already
   have open, under your own login, one question at a time, at human pace — which

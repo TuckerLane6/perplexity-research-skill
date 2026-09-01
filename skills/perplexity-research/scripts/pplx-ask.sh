@@ -74,10 +74,29 @@ fi
 printf '%s' "$Q" | "$PPLX" set-input || { echo "Could not write the question into the composer." >&2; exit 1; }
 sleep 1
 
-# The composer's send control is an arrow button; its description varies by build.
-"$PPLX" click "arrow-right" >/dev/null 2>&1 \
-  || "$PPLX" click "arrow-up" >/dev/null 2>&1 \
-  || { echo "Could not submit the question." >&2; exit 1; }
+# Writing the value can report success while the composer ends up empty (the app
+# re-renders the composer on some transitions). Confirm the text is really there
+# before submitting, and write it once more if it is not — submitting an empty
+# composer produces a confusing "nothing happened".
+if ! "$PPLX" dump 2>&1 | grep -qE '\[AXTextArea\][^=]*val=.+'; then
+  sleep 1
+  printf '%s' "$Q" | "$PPLX" set-input >/dev/null 2>&1 || true
+  sleep 1
+fi
+
+# The send control is an arrow button whose accessibility description differs by
+# build, and on some builds it is unlabelled until the composer holds text. Try
+# the known labels in turn rather than assuming one.
+SUBMITTED=0
+for label in "arrow-right" "arrow-up" "Submit" "Send" "send"; do
+  if "$PPLX" click "$label" >/dev/null 2>&1; then SUBMITTED=1; break; fi
+done
+if [ "$SUBMITTED" != 1 ]; then
+  echo "Could not submit: no send control was found in the composer." >&2
+  echo "The question is sitting in the composer; press Return in the app to send it," >&2
+  echo "or see references/SETUP.md (the send arrow's description varies by build)." >&2
+  exit 1
+fi
 
 # The Copy button appears exactly when the answer has finished streaming.
 ELAPSED=0
@@ -161,9 +180,22 @@ EOF
   return 1
 }
 
+# The Copy button appearing means the answer finished streaming, but the
+# accessibility tree fills in behind it — read once at that instant and you get a
+# fragment. Poll until two consecutive reads agree, the same way the browser path
+# waits for the page to stop growing.
 ANSWER="$(read_tree)"
+for _ in 1 2 3 4 5; do
+  sleep 2
+  NEXT="$(read_tree)"
+  [ "$NEXT" = "$ANSWER" ] && break
+  ANSWER="$NEXT"
+done
 SOURCE_OF_TEXT="accessibility tree, clipboard untouched"
-LAST_LINE="$(printf '%s' "$ANSWER" | sed -e 's/[[:space:]]*$//' | tail -1)"
+# The app appends an object-replacement glyph where an inline citation marker
+# sits, so strip that (and trailing space) before judging whether the text ends
+# on sentence punctuation — otherwise a complete answer reads as truncated.
+LAST_LINE="$(printf '%s' "$ANSWER" | tail -1 | sed -e 's/\xef\xbf\xbc//g' -e 's/[[:space:]]*$//')"
 case "$LAST_LINE" in
   *[.!?\"\)]|*：|*。) : ;;                     # ends on sentence punctuation: complete
   *)
