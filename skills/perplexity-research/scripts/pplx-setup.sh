@@ -89,8 +89,17 @@ install_cli() {
   command -v git >/dev/null 2>&1 || { echo "git is required to build the helper. Install git, then rerun."; exit 1; }
   [ "$PLATFORM" = "macos" ] || { echo "The desktop helper drives the macOS app and only builds on macOS. Use the browser path instead."; exit 1; }
 
+  # Build in a throwaway directory. The name is fixed and the path is checked
+  # before the delete, so a strange TMPDIR cannot turn this into a wider wipe.
   SRC="${TMPDIR:-/tmp}/pplx-cli-src"
-  rm -rf "$SRC"
+  case "$SRC" in
+    */pplx-cli-src) ;;
+    *) echo "Refusing to build: unexpected temp path '$SRC'."; exit 1 ;;
+  esac
+  [ -e "$SRC" ] && rm -rf "$SRC"
+
+  echo "Cloning $CLI_UPSTREAM into $SRC and building it with Go."
+  echo "That is third-party open-source code; read it there if you would rather not."
   git clone --depth 1 "$CLI_UPSTREAM" "$SRC" || { echo "clone failed"; exit 1; }
   mkdir -p "$HOME/.local/bin"
   ( cd "$SRC" && go build -o "$HOME/.local/bin/pplx" . ) || {
