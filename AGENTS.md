@@ -38,6 +38,13 @@ On the browser path there is no script to run: drive `https://www.perplexity.ai`
 with whatever browser automation the agent has, in a new tab, and follow the
 same rules.
 
+**Platforms.** macOS gets both paths and defaults to the app. Windows and Linux
+get the browser path, which is not a downgrade in capability — only the app
+automation is macOS-specific. On Windows use `scripts/pplx-setup.ps1 -Path
+browser` (works on the PowerShell that ships with Windows), or the bash script
+under Git Bash or WSL. With no shell at all, write the two-line config file
+yourself at `~/.config/perplexity-research-skill/config`.
+
 ## Rules an agent must not break
 
 - **Ask which path the user prefers before setting one, and offer the desktop

@@ -6,7 +6,7 @@ machines that cannot run the app. The skill asks once and remembers the answer.
 
 | | Desktop app | Browser |
 |---|---|---|
-| Operating system | macOS only | any |
+| Operating system | macOS only | macOS, Windows, Linux |
 | Extra install | Perplexity app + a small helper built from source | none beyond the browser automation the session already has |
 | One-time permission | macOS Accessibility | whatever the browser tool asks for |
 | Runs in background | yes, the person keeps working | no, it drives a visible browser |
@@ -32,6 +32,23 @@ out, the correct behavior is to say so and let the user sign in.
 
 Whatever plan the account has is what it uses. The available modes and models are
 read from the account at runtime rather than assumed.
+
+## Windows and Linux
+
+The browser path is the one that works, and it is the whole story: there is
+nothing to install and nothing to build. Record it once and start asking.
+
+- **Windows with PowerShell** (5.1, the version Windows ships, or 7+):
+  `.\scripts\pplx-setup.ps1 -Path browser`
+- **Windows with Git Bash or WSL**: `scripts/pplx-setup.sh --path browser`
+- **Linux**: `scripts/pplx-setup.sh --path browser`
+- **No usable shell**: write the config file directly. It lives at
+  `~/.config/perplexity-research-skill/config` on every platform and contains one
+  meaningful line, `path=browser`.
+
+Both setup scripts write the same file in the same place, so it does not matter
+which one a machine uses. `scripts/pplx-ask.sh` is macOS-only by design and says
+so if it is run anywhere else.
 
 ## Browser path
 

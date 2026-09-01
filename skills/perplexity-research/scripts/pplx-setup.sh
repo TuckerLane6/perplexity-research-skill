@@ -11,6 +11,22 @@
 # Everything is per-machine. Nothing here is specific to any one user or repo.
 set -uo pipefail
 
+# Platform detection. The desktop-app path drives the macOS app through the macOS
+# accessibility API, so it exists on macOS only; everywhere else the browser path
+# is the one that works. Git Bash, MSYS and Cygwin all report their own uname, and
+# WSL reports Linux, so name them explicitly rather than assuming "not Darwin =
+# Linux".
+platform() {
+  case "$(uname -s 2>/dev/null)" in
+    Darwin) echo macos ;;
+    MINGW*|MSYS*|CYGWIN*) echo windows ;;
+    Linux)
+      if grep -qiE "(microsoft|wsl)" /proc/version 2>/dev/null; then echo wsl; else echo linux; fi ;;
+    *) [ -n "${OS:-}" ] && [ "${OS:-}" = "Windows_NT" ] && echo windows || echo unknown ;;
+  esac
+}
+PLATFORM="$(platform)"
+
 CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/perplexity-research-skill"
 CONFIG="$CONFIG_DIR/config"
 CLI_UPSTREAM="https://github.com/toby1991/pplx-cli"
@@ -31,7 +47,13 @@ find_app() {
 }
 
 report() {
-  echo "Platform:        $(uname -s)"
+  case "$PLATFORM" in
+    macos)   echo "Platform:        macOS — both paths available" ;;
+    windows) echo "Platform:        Windows — browser path (the app path is macOS only)" ;;
+    wsl)     echo "Platform:        WSL — browser path, driving a browser on the Windows side" ;;
+    linux)   echo "Platform:        Linux — browser path (the app path is macOS only)" ;;
+    *)       echo "Platform:        unrecognised — browser path is the safe choice" ;;
+  esac
   if APP=$(find_app); then echo "Perplexity app:  found at $APP"
   else echo "Perplexity app:  not found"; fi
   if CLI=$(find_cli); then echo "Desktop helper:  found at $CLI"
@@ -41,12 +63,12 @@ report() {
 
   # The app path is the recommended default wherever it can run: it works in the
   # background instead of taking over a browser window the person is using.
-  if [ "$(uname -s)" = "Darwin" ] && find_app >/dev/null; then
+  if [ "$PLATFORM" = "macos" ] && find_app >/dev/null; then
     echo "Recommended:     app  (this machine can run it; offer it first)"
-  elif [ "$(uname -s)" = "Darwin" ]; then
+  elif [ "$PLATFORM" = "macos" ]; then
     echo "Recommended:     app, once the Perplexity desktop app is installed; browser until then"
   else
-    echo "Recommended:     browser  (the app path needs macOS)"
+    echo "Recommended:     browser  (the only path on this platform — do not ask, just say so)"
   fi
 }
 
@@ -64,7 +86,7 @@ write_config() {
 install_cli() {
   command -v go  >/dev/null 2>&1 || { echo "Go is required to build the helper. Install Go, then rerun."; exit 1; }
   command -v git >/dev/null 2>&1 || { echo "git is required to build the helper. Install git, then rerun."; exit 1; }
-  [ "$(uname -s)" = "Darwin" ] || { echo "The desktop helper drives the macOS app and only builds on macOS. Use the browser path instead."; exit 1; }
+  [ "$PLATFORM" = "macos" ] || { echo "The desktop helper drives the macOS app and only builds on macOS. Use the browser path instead."; exit 1; }
 
   SRC="${TMPDIR:-/tmp}/pplx-cli-src"
   rm -rf "$SRC"
@@ -142,7 +164,11 @@ done
 if [ -n "$CHOICE" ]; then
   case "$CHOICE" in
     app)
-      [ "$(uname -s)" = "Darwin" ] || echo "NOTE: the app path is macOS only; the browser path works everywhere."
+      if [ "$PLATFORM" != "macos" ]; then
+        echo "The app path cannot run on this platform: it drives the macOS desktop app"
+        echo "through the macOS accessibility API. Use: $0 --path browser"
+        exit 1
+      fi
       find_app >/dev/null || echo "NOTE: the Perplexity app was not found in /Applications."
       find_cli >/dev/null || echo "NOTE: the desktop helper is not installed yet — run with --install-cli."
       write_config app ;;

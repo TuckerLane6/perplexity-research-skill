@@ -8,8 +8,19 @@ path that can spend money. The default is the **desktop app**, driven in the
 background so it never takes over your screen; a **browser** path is the fallback
 for machines that cannot run the app.
 
-Works in Claude Code as a skill, and in Codex or any other agent that can run a
-shell command — see [AGENTS.md](AGENTS.md).
+Works on **macOS, Windows and Linux**, and in Claude Code, Codex, or any other
+agent that can run a shell command — see [AGENTS.md](AGENTS.md).
+
+| Platform | Path | Setup |
+|---|---|---|
+| macOS | desktop app (default) or browser | `pplx-setup.sh` |
+| Windows | browser | `pplx-setup.ps1` (PowerShell 5.1+), or `pplx-setup.sh` in Git Bash / WSL |
+| Linux | browser | `pplx-setup.sh` |
+
+The desktop path drives the macOS app through the macOS accessibility API, so it
+is macOS-only by nature. Everywhere else the browser path does the same job with
+whatever browser automation the agent already has, and the scripts say so rather
+than failing halfway through.
 
 ## Install
 
@@ -113,7 +124,9 @@ some other thread.
 ## Limits worth knowing before you install
 
 - **The app path is macOS only.** The helper drives the desktop app through the
-  macOS accessibility API. Everywhere else, use the browser path.
+  macOS accessibility API. On Windows and Linux the browser path is the one that
+  works, and the setup scripts detect the platform and tell you so instead of
+  offering a choice that cannot work.
 - **Long answers can arrive truncated.** The app renders answers lazily, so the
   accessibility tree sometimes holds only the beginning. The script detects this
   and says so rather than pretending the fragment is the whole answer. Asking a
@@ -139,7 +152,8 @@ some other thread.
 - Claude Code, Codex, or any agent that can run a shell command
 - A Perplexity account (no API key, no paid API)
 - App path: macOS, the Perplexity desktop app, Go and git to build the helper
-- Browser path: any browser automation your session already has
+- Browser path: any browser automation your session already has — no shell
+  required at all, since the config is a two-line text file
 
 ## Credits
 

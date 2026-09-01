@@ -11,6 +11,17 @@
 # control. Deep Research needs a mode click the user makes themselves first.
 set -uo pipefail
 
+# This script drives the macOS desktop app through the macOS accessibility API.
+# On any other platform the browser path is the one that works, so say that
+# plainly instead of failing further down with a confusing error.
+if [ "$(uname -s 2>/dev/null)" != "Darwin" ]; then
+  echo "This script only runs on macOS: it drives the Perplexity desktop app through" >&2
+  echo "the macOS accessibility API. On this platform use the browser path -" >&2
+  echo "  scripts/pplx-setup.sh --path browser   (or pplx-setup.ps1 -Path browser)" >&2
+  echo "- and drive perplexity.ai with the browser automation this session has." >&2
+  exit 1
+fi
+
 Q="${1:?usage: pplx-ask.sh \"question\" [max_wait_seconds]}"
 MAXWAIT="${2:-180}"
 
