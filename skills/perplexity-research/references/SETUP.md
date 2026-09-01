@@ -47,7 +47,8 @@ nothing to install and nothing to build. Record it once and start asking.
   meaningful line, `path=browser`.
 
 Both setup scripts write the same file in the same place, so it does not matter
-which one a machine uses. `scripts/pplx-ask.sh` is macOS-only by design and says
+which one a machine uses — verified on Windows PowerShell 5.1 and Git Bash on the
+same machine, each reading the config the other wrote. `scripts/pplx-ask.sh` is macOS-only by design and says
 so if it is run anywhere else.
 
 ## Browser path
