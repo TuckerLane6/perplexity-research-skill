@@ -56,15 +56,17 @@ Detail is for when detail changes something, not a default setting.
    fragments, arrows, or shorthand. A few plain sentences beat a wall of
    bullets; paste the whole thread only when someone needs the whole thread.
 10. **App path:** run `scripts/pplx-ask.sh "your question" [max_wait_seconds]`.
-   It sets the composer, submits, waits for the answer to finish, and prints
-   it. It never types keystrokes, never activates the app, and never touches
-   the clipboard, so the user can keep working while it runs.
+    It sets the composer, submits, waits for the answer to finish, and prints
+    it. It never types keystrokes, never activates the app, and never touches
+    the clipboard, so the user can keep working while it runs.
 11. **Browser path:** drive `https://www.perplexity.ai` with whatever browser
-   automation this session has. Open a new tab rather than reusing one the
-   user is working in. Type into the composer, submit with the composer's own
-   submit button, then poll until the answer stops growing before reading it.
-12. Treat every returned claim as a claim, not a fact: check the citation
-   exists and says what the answer says it says, before acting on it.
+    automation this session has. Open a new tab rather than reusing one the
+    user is working in. Type into the composer, submit with the composer's own
+    submit button, then poll until the answer stops growing before reading it.
+12. **Treat every claim as a claim, not a fact.** Open the source and check it
+    actually says what the answer says it says. Research tools as a class have
+    been measured citing sources that do not support the claim, so this is the
+    step that makes the sourcing worth anything.
 
 ## Choose the mode and the model on purpose
 
@@ -73,10 +75,10 @@ question to a fast one. Choose deliberately — but choose from what this accoun
 actually offers today.
 
 13. **Read the lineup, never hardcode it.** Run `scripts/pplx-modes.sh --models`
-   and pick from what it prints. Perplexity's own documentation says the model
-   selector in the app is the source of truth for an account, because models are
-   added and retired continuously — so any list written into a skill file is
-   wrong within weeks, and wrong in a way that reads as authoritative.
+    and pick from what it prints. Perplexity's own documentation says the model
+    selector in the app is the source of truth for an account, because models are
+    added and retired continuously — so any list written into a skill file is
+    wrong within weeks, and wrong in a way that reads as authoritative.
 14. **Route on the axes that survive renames, not on names.** Three have held
     across every lineup change:
     - **Mode** — Search or Deep Research. This changes the answer far more than
@@ -108,10 +110,6 @@ actually offers today.
     report someone will read and cite — not by how hard the question feels. A
     hard question with a one-line answer is still a Search. Permission to run one
     is covered below, under money.
-20. **Check the citations before repeating anything.** Sourced-looking answers
-    from research agents as a class have been measured citing sources that do not
-    support the claim, so open the source and read it before a claim from here
-    becomes a fact in your work.
 
 ## The user's account is theirs — never handle it
 
@@ -129,36 +127,36 @@ once, by hand. There is nothing for this skill to authenticate.
 
 ## Never spend the user's money
 
-21. Use plain Search mode. Before submitting in a browser, confirm the composer
-   is in Search mode — some Perplexity composers default to an agent mode that
-   consumes paid credits.
-22. Abort and report if a submission lands on a URL containing `/computer/`, or
+20. Use plain Search mode. Before submitting in a browser, confirm the composer
+    is in Search mode — some Perplexity composers default to an agent mode that
+    consumes paid credits.
+21. Abort and report if a submission lands on a URL containing `/computer/`, or
     on any other agent-mode session. Do not retry it.
-23. Never click "Add credits", never start a subscription or upgrade flow, and
+22. Never click "Add credits", never start a subscription or upgrade flow, and
     never select a mode or model marked as a higher tier than the user's plan.
     Those are the user's purchasing decisions, not the session's.
-24. Deep Research draws on a quota the user shares with their own usage, and
+23. Deep Research draws on a quota the user shares with their own usage, and
     consumer plans do not publish how much of it is left — so neither the session
     nor the user can measure it. Say you are about to run one and get a yes
     first. Plain searches need no permission.
 
 ## Never leak the user's data
 
-25. A question is an outbound message. Never put credentials, API keys, private
+24. A question is an outbound message. Never put credentials, API keys, private
     customer records, contract terms, or anything under an agreement into one.
-26. Before pointing Perplexity's folder or file context at a directory, check
+25. Before pointing Perplexity's folder or file context at a directory, check
     what is in that directory. Point it at a purpose-built folder holding only
     material that is safe to share, never at a whole working repository, which
     normally holds keys and private files.
-27. Leave the account as you found it: delete throwaway test threads, and if
+26. Leave the account as you found it: delete throwaway test threads, and if
     you change the model or mode selector, set it back.
 
 ## When it does not work
 
-28. App path, nothing comes back: run the helper's dump command and look for
+27. App path, nothing comes back: run the helper's dump command and look for
     the answer text in the accessibility tree. `references/SETUP.md` has the
     exact commands and the known failure shapes.
-29. Browser path, the answer looks truncated: the page streams, so poll until
+28. Browser path, the answer looks truncated: the page streams, so poll until
     the text stops changing rather than reading once.
-30. Either path, twice failed: tell the user plainly what failed and offer the
+29. Either path, twice failed: tell the user plainly what failed and offer the
     other path. Do not keep retrying the same broken route.
