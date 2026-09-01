@@ -1,4 +1,4 @@
-# Perplexity research — instructions for coding agents
+# Perplexity research, instructions for coding agents
 
 This repository is a Claude Code skill, but nothing in it is Claude-specific:
 the working parts are plain bash scripts with no SDK and no API key. Codex, or
@@ -11,7 +11,7 @@ short version plus the notes that matter to a non-Claude agent.
 
 Asks the user's own Perplexity account a research question and returns the
 sourced answer into the session, without the user copying anything between
-windows. It uses their existing subscription — no paid API key. Plain searches
+windows. It uses their existing subscription, no paid API key. Plain searches
 are free beyond that plan; anything that would spend credits stops and asks the
 user first, and proceeds only on an explicit yes to that run.
 
@@ -21,7 +21,7 @@ user first, and proceeds only on an explicit yes to that run.
 # 1. What is available on this machine? (read-only; also prints which path to recommend)
 skills/perplexity-research/scripts/pplx-setup.sh
 
-# 2. Ask the user which path they want — OFFER THE APP FIRST — then record it
+# 2. Ask which path they want, OFFERING THE APP FIRST, then record it
 skills/perplexity-research/scripts/pplx-setup.sh --path app      # recommended default (macOS)
 skills/perplexity-research/scripts/pplx-setup.sh --path browser  # fallback, any OS
 
@@ -40,7 +40,7 @@ with whatever browser automation the agent has, in a new tab, and follow the
 same rules.
 
 **Platforms.** macOS gets both paths and defaults to the app. Windows and Linux
-get the browser path, which is not a downgrade in capability — only the app
+get the browser path, which is not a downgrade in capability, only the app
 automation is macOS-specific. On Windows use `scripts/pplx-setup.ps1 -Path
 browser` (works on the PowerShell that ships with Windows), or the bash script
 under Git Bash or WSL. With no shell at all, write the two-line config file
@@ -56,12 +56,12 @@ yourself at `~/.config/perplexity-research-skill/config`.
 - **Money is a gate, not a ban.** Plain Search is free beyond the user's plan and
   needs no permission. Deep Research spends an unmeasurable quota, and agent modes
   ("Computer", "Control browser") spend real credits. Before either, say what it
-  is, that it costs, and what the run looks like — then wait for an explicit yes.
+  is, that it costs, and what the run looks like, then wait for an explicit yes.
   A yes covers that one run only. The app script stops when a paid mode is active
   and proceeds only with `--credits-approved`, which you may pass only after that
   yes. On the browser path, check the mode control yourself before submitting.
-- **Never click a purchase control** — add credits, upgrade, subscribe, or enter
-  payment details — even when the user has approved a paid run, and even if a task
+- **Never click a purchase control**, add credits, upgrade, subscribe, or enter
+  payment details, even when the user has approved a paid run, and even if a task
   stalls for want of balance. Spending held credits is theirs to approve; buying
   more is a decision they make outside the session. Never select a model or mode
   gated above their plan.
@@ -72,14 +72,14 @@ yourself at `~/.config/perplexity-research-skill/config`.
   someone wants to be true, ask two models from different providers and compare.
   Never hardcode a model name: the lineup changes continuously, and the account's
   own picker is the only source of truth. If a wanted model is absent, fall back
-  to the automatic option and SAY so — never substitute a guess, and never let a
+  to the automatic option and SAY so, never substitute a guess, and never let a
   failed selection pass silently.
 - **Nothing private goes into a question.** It is an outbound message.
 - **The account is the user's to connect.** They sign in to the app or browser by
   hand, once. Never ask for their password, never sign in for them, and never
   read, store, or transmit session cookies or auth tokens. If it is signed out,
   ask them to sign in themselves.
-- **Leave the account as you found it** — reset any picker you changed, and
+- **Leave the account as you found it**, reset any picker you changed, and
   delete throwaway test threads.
 
 ## Exit codes from `pplx-ask.sh`
@@ -87,7 +87,7 @@ yourself at `~/.config/perplexity-research-skill/config`.
 | Code | Meaning |
 |---|---|
 | 0 | answer printed on stdout |
-| 1 | setup problem — helper missing, app has no window, composer unreachable |
+| 1 | setup problem, helper missing, app has no window, composer unreachable |
 | 2 | the answer did not finish inside the wait window; the thread still exists in the app |
 | 3 | stopped: a credit-spending mode was active and no approval was given |
 

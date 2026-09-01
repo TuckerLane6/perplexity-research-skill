@@ -1,13 +1,13 @@
 ---
 name: perplexity-research
-description: Ask Perplexity a research question from a coding session and get the sourced answer back, with its citations. Runs on the user's own Perplexity subscription — no API key and no per-question billing — driving the desktop app by default on macOS, or a browser on Windows and Linux. Anything that would spend credits stops and asks first. Use for "ask Perplexity", "research this with sources", "check this claim", "what do practitioners actually say", "get me citations", "is that vendor stat real", or whenever an answer needs sources the model cannot supply from memory.
+description: Ask Perplexity a research question from a coding session and get the sourced answer back, with its citations. Runs on the user's own Perplexity subscription, no API key and no per-question billing, driving the desktop app by default on macOS, or a browser on Windows and Linux. Anything that would spend credits stops and asks first. Use for "ask Perplexity", "research this with sources", "check this claim", "what do practitioners actually say", "get me citations", "is that vendor stat real", or whenever an answer needs sources the model cannot supply from memory.
 ---
 
-# Perplexity research — ask from the session, get sources back
+# Perplexity research, ask from the session, get sources back
 
 Runs on the user's own Perplexity account: no API key, and plain searches cost
 nothing beyond the plan they already pay for. The paid modes are available but
-gated — they stop and ask before spending anything. Setup and troubleshooting:
+gated, they stop and ask before spending anything. Setup and troubleshooting:
 `references/SETUP.md`.
 
 Ask questions the way a person would, and report answers back in plain English.
@@ -18,19 +18,19 @@ Detail is for when detail changes something, not a default setting.
 1. Read the config file first:
    `"${XDG_CONFIG_HOME:-$HOME/.config}"/perplexity-research-skill/config`.
    If it names a path, use that path and skip to "Ask a question".
-2. If there is no config, check the platform first — `scripts/pplx-setup.sh`
+2. If there is no config, check the platform first, `scripts/pplx-setup.sh`
    (or `scripts/pplx-setup.ps1` on Windows without bash) prints it and says
    which paths exist here. **On anything but macOS the browser is the only
    path**, so say that and use it rather than asking a question with one
    possible answer.
 3. On macOS, ASK the user which they prefer, in one short question. **Offer the
-   desktop app first and recommend it** — it is the better path and the
+   desktop app first and recommend it**, it is the better path and the
    intended default:
-   - **Desktop app (recommended)** — runs in the background while they keep
+   - **Desktop app (recommended)**, runs in the background while they keep
      working: no window steals focus, nothing types into their screen. Needs
      macOS, the Perplexity app, a one-time helper install, and one
      accessibility permission click.
-   - **Browser** — the fallback, for when the app path is not possible: not
+   - **Browser**, the fallback, for when the app path is not possible: not
      macOS, the app is not installed, or the user says they want the browser.
      It works anywhere but drives a real browser window, so it collides with
      what the user is doing in that browser.
@@ -40,7 +40,7 @@ Detail is for when detail changes something, not a default setting.
    `scripts/pplx-setup.sh --path app|browser`, or on Windows
    `scripts/pplx-setup.ps1 -Path browser`. The script checks what is actually
    installed, reports what is missing, and writes the config. With no usable
-   shell at all, write the config file yourself — it is two lines, `path=app`
+   shell at all, write the config file yourself, it is two lines, `path=app`
    or `path=browser` under a comment.
 5. Re-ask only when the chosen path fails twice in a row, and offer the other
    one rather than retrying a third time.
@@ -49,11 +49,11 @@ Detail is for when detail changes something, not a default setting.
 
 6. **Ask it the way a person would.** Write the question you would put to a
    well-read colleague: plain words, one clear ask, no preamble. Length is not
-   rigour — an over-specified question comes back padded and harder to check.
+   rigour, an over-specified question comes back padded and harder to check.
 7. Add a detail only when it changes the answer: a timeframe, a place, a field,
    or who you want to hear from (practitioners rather than vendors, say). Skip
    role-play framing, formatting demands, and restating the obvious.
-8. Ask for sources when the answer will be used for something — who said it,
+8. Ask for sources when the answer will be used for something, who said it,
    where, and when. That is the one demand always worth its words, because an
    uncited answer cannot be checked.
 9. **Write the answer back in plain English.** Say what it means in ordinary
@@ -79,21 +79,21 @@ Detail is for when detail changes something, not a default setting.
 ## Choose the mode and the model on purpose
 
 Leaving everything on auto wastes a strong model on trivia and sends a hard
-question to a fast one. Choose deliberately — but choose from what this account
+question to a fast one. Choose deliberately, but choose from what this account
 actually offers today.
 
 14. **Read the lineup, never hardcode it.** Run `scripts/pplx-modes.sh --models`
     and pick from what it prints. Perplexity's own documentation says the model
     selector in the app is the source of truth for an account, because models are
-    added and retired continuously — so any list written into a skill file is
+    added and retired continuously, so any list written into a skill file is
     wrong within weeks, and wrong in a way that reads as authoritative.
 15. **Route on the axes that survive renames, not on names.** Three have held
     across every lineup change:
-    - **Mode** — Search or Deep Research. This changes the answer far more than
+    - **Mode**, Search or Deep Research. This changes the answer far more than
       swapping one frontier model for another, so spend the decision here first.
-    - **Thinking** — a setting on a model, not a separate model. Some models
+    - **Thinking**, a setting on a model, not a separate model. Some models
       have it always on, some optional, some not at all.
-    - **Provider family** — only when it genuinely matters, which is mainly
+    - **Provider family**, only when it genuinely matters, which is mainly
       disagreement (below).
 16. **Match the task class to those axes:**
     - A single fact, a date, a version, "does X exist" → Search, Thinking off,
@@ -101,7 +101,7 @@ actually offers today.
     - Synthesis, comparisons, tradeoffs → Search with Thinking on; Deep Research
       only if the deliverable really is a report.
     - Code, stack traces, API behavior → Search with Thinking on.
-    - A checked claim — a vendor statistic, "did they really say that", anything
+    - A checked claim, a vendor statistic, "did they really say that", anything
       someone wants to be true → **ask the same question of two models from
       different providers and compare the answers.** A single confident report is
       the worst tool here, because it launders weak sources into fluent prose.
@@ -114,12 +114,12 @@ actually offers today.
 18. **Never select a tier-gated row.** Pickers list models above the current plan
     to advertise them. Selecting one is an upgrade prompt, not a capability.
 19. **Put the picker back** to what it was. A person shares this account.
-20. **Deep Research is chosen by the shape of the deliverable** — a multi-section
-    report someone will read and cite — not by how hard the question feels. A
+20. **Deep Research is chosen by the shape of the deliverable**, a multi-section
+    report someone will read and cite, not by how hard the question feels. A
     hard question with a one-line answer is still a Search. Permission to run one
     is covered below, under money.
 
-## The user's account is theirs — never handle it
+## The user's account is theirs, never handle it
 
 The user connects Perplexity themselves by signing in to the app or the browser,
 once, by hand. There is nothing for this skill to authenticate.
@@ -143,7 +143,7 @@ The rule is a gate, not a ban.
 22. **Deep Research draws a quota**, and consumer plans do not publish how much of
     it is left, so neither the session nor the user can measure it. Say you are
     about to run one and wait for a yes.
-23. **Agent modes spend real credits** — the ones variously called Computer,
+23. **Agent modes spend real credits**, the ones variously called Computer,
     Control browser, or similar. They are available to use. Before selecting one,
     or before submitting into a composer already set to one, tell the user
     plainly: which mode, that it spends credits rather than quota, roughly what
@@ -153,7 +153,7 @@ The rule is a gate, not a ban.
     and not a bigger version of the same task. Ask again each time.
 25. **Never buy anything, ever.** Spending credits the user already holds is
     their call to make. Adding credits, upgrading a plan, starting a
-    subscription, or entering payment details is a purchase — never click those,
+    subscription, or entering payment details is a purchase, never click those,
     even if the user has approved a paid run, and even if a task stalls for want
     of balance. Say it stalled and let them decide outside the session.
 26. **The scripts fail closed.** `scripts/pplx-ask.sh` stops when the composer is

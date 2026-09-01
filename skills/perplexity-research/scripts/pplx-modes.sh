@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pplx-modes.sh — report what the app's composer is set to right now, and what
+# pplx-modes.sh: report what the app's composer is set to right now, and what
 # models it is offering. Read-only: it selects nothing and submits nothing.
 #
 #   pplx-modes.sh            # modes only (fast, never touches the UI)
@@ -79,5 +79,5 @@ sleep 2
 # exactly as it was found, which matters because a person shares this app.
 "$PPLX" click "$OPENED" >/dev/null 2>&1 || true
 echo
-echo "  (rows marked with a higher tier belong to a plan this account may not have —"
+echo "  (rows marked with a higher tier belong to a plan this account may not have:"
 echo "   never select one; it is an upgrade prompt, not a capability)"

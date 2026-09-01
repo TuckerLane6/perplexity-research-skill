@@ -71,7 +71,7 @@ ensure_window || exit 1
 # Prefer a fresh thread so the question is not read as a follow-up to whatever was
 # asked before. This click is best-effort on purpose: the same label also exists as
 # a menu item on some builds, and hitting that one opens a menu and can dismiss the
-# window — so verify the composer afterwards and recover rather than trusting it.
+# window, so verify the composer afterwards and recover rather than trusting it.
 "$PPLX" click "New Session" >/dev/null 2>&1 || true
 sleep 2
 if ! has_composer; then
@@ -107,7 +107,7 @@ sleep 1
 
 # Writing the value can report success while the composer ends up empty (the app
 # re-renders the composer on some transitions). Confirm the text is really there
-# before submitting, and write it once more if it is not — submitting an empty
+# before submitting, and write it once more if it is not, submitting an empty
 # composer produces a confusing "nothing happened".
 if ! "$PPLX" dump 2>&1 | grep -qE '\[AXTextArea\][^=]*val=.+'; then
   sleep 1
@@ -146,7 +146,7 @@ fi
 # Clipboard-free readback: answer text lands in the tree as static-text lines.
 #
 # The sidebar lists the person's other recent threads, and those lines are in the
-# tree too — printing them would spill unrelated history into the transcript. The
+# tree too, printing them would spill unrelated history into the transcript. The
 # question itself appears twice: once in that sidebar list, then again at the top
 # of the open thread. Everything after its LAST occurrence is this answer, so cut
 # there. The short leftovers after the cut are step labels, dropped by a length
@@ -154,7 +154,7 @@ fi
 #
 # Do NOT filter by line length: answers contain short lines (list items, "Yes.",
 # a name, a number) and a length floor silently truncates them. Filter by what the
-# line IS instead — the app's own chrome labels are a small known set.
+# line IS instead, the app's own chrome labels are a small known set.
 read_tree() {
 "$PPLX" dump 2>&1 \
   | grep -E '^\s*\[AXStaticText\]' \
@@ -180,7 +180,7 @@ read_tree() {
 # first part of a long one. A finished answer ends on sentence punctuation; if it
 # does not, the tree gave us a fragment and the clipboard is the reliable source.
 # The clipboard belongs to the person at the keyboard, so it is saved first and put
-# straight back — it is borrowed for about a second, never kept.
+# straight back, it is borrowed for about a second, never kept.
 read_clipboard() {
   local saved answer
   saved="$(pbpaste 2>/dev/null || true)"
@@ -194,7 +194,7 @@ read_clipboard() {
 
 # A copied blob is only trustworthy if it is THIS answer. There can be more than
 # one Copy control in the tree, and clicking the wrong one returns a completely
-# different thread's text — which is far worse than a short answer, because it
+# different thread's text, which is far worse than a short answer, because it
 # looks like a real reply to the question that was just asked. So the copy is
 # accepted only when it visibly overlaps the fragment the tree already gave us,
 # and that fragment is known to belong to this thread because it sits after this
@@ -212,7 +212,7 @@ EOF
 }
 
 # The Copy button appearing means the answer finished streaming, but the
-# accessibility tree fills in behind it — read once at that instant and you get a
+# accessibility tree fills in behind it, read once at that instant and you get a
 # fragment. Poll until two consecutive reads agree, the same way the browser path
 # waits for the page to stop growing.
 ANSWER="$(read_tree)"
@@ -225,7 +225,7 @@ done
 SOURCE_OF_TEXT="accessibility tree, clipboard untouched"
 # The app appends an object-replacement glyph where an inline citation marker
 # sits, so strip that (and trailing space) before judging whether the text ends
-# on sentence punctuation — otherwise a complete answer reads as truncated.
+# on sentence punctuation, otherwise a complete answer reads as truncated.
 LAST_LINE="$(printf '%s' "$ANSWER" | tail -1 | sed -e 's/\xef\xbf\xbc//g' -e 's/[[:space:]]*$//')"
 case "$LAST_LINE" in
   *[.!?\"\)]|*：|*。) : ;;                     # ends on sentence punctuation: complete
@@ -234,7 +234,7 @@ case "$LAST_LINE" in
       ANSWER="$FULL"
       SOURCE_OF_TEXT="clipboard (the tree held only a fragment); previous clipboard restored"
     else
-      SOURCE_OF_TEXT="accessibility tree — TRUNCATED, and the copied text did not match this thread, so it was discarded"
+      SOURCE_OF_TEXT="accessibility tree, TRUNCATED, and the copied text did not match this thread, so it was discarded"
       ANSWER="$ANSWER
 [TRUNCATED: the app exposed only the start of this answer. Open the thread in the
 app to read the rest, or ask a narrower question that fits a short reply.]"

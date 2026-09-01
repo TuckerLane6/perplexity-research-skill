@@ -1,6 +1,6 @@
 # Setup and troubleshooting
 
-Two paths do the same job. **The desktop app is the default** — it runs in the
+Two paths do the same job. **The desktop app is the default**, it runs in the
 background while the person keeps working. The browser is the fallback for
 machines that cannot run the app. The skill asks once and remembers the answer.
 
@@ -15,7 +15,7 @@ machines that cannot run the app. The skill asks once and remembers the answer.
 ## Connecting the account
 
 Nothing to connect. The user signs in to Perplexity by hand, once, in the app or
-the browser — exactly as they would to use it themselves. The skill then works
+the browser, exactly as they would to use it themselves. The skill then works
 inside that signed-in session.
 
 There is **no API key, no token, and no OAuth step**, on either path. That is a
@@ -23,8 +23,8 @@ deliberate design choice, not a missing feature:
 
 - an API key would bill the user's card per question, separately from the
   subscription they already pay for;
-- exporting a session token to a config file — how several other integrations
-  work — copies the user's credentials out of the browser they belong to.
+- exporting a session token to a config file, how several other integrations
+  work, copies the user's credentials out of the browser they belong to.
 
 This skill does neither. It never asks for a password, never signs in for the
 user, and never reads or stores cookies or tokens. If the app or page is signed
@@ -47,22 +47,22 @@ nothing to install and nothing to build. Record it once and start asking.
   meaningful line, `path=browser`.
 
 Both setup scripts write the same file in the same place, so it does not matter
-which one a machine uses — verified on Windows PowerShell 5.1 and Git Bash on the
+which one a machine uses, verified on Windows PowerShell 5.1 and Git Bash on the
 same machine, each reading the config the other wrote. `scripts/pplx-ask.sh` is macOS-only by design and says
 so if it is run anywhere else.
 
 ## Browser path
 
 Nothing to install. The skill drives `https://www.perplexity.ai` with whatever
-browser automation the session has — a browser MCP server, a CDP-based harness,
+browser automation the session has, a browser MCP server, a CDP-based harness,
 or a scripted browser.
 
 Rules that matter more than the tool:
 
 - Open a **new tab**. Reusing a tab the person is working in interrupts them,
   and two drivers in one window fight each other.
-- **Confirm Search mode before submitting.** Some composers — project composers
-  in particular — default to an agent mode that spends paid credits. Read the
+- **Confirm Search mode before submitting.** Some composers, project composers
+  in particular, default to an agent mode that spends paid credits. Read the
   mode control's pressed state and only submit when Search is the active one.
 - Submit with the composer's own submit button. A plain Return keypress does not
   reliably submit long questions, and in some contexts it moves the draft
@@ -119,14 +119,14 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
   clear it, then retry.
 - **The app can be running with no window.** "New Session" also exists as a menu
   item on some builds, so a click by that description can open a menu instead and
-  leave the window dismissed — after which writing the question fails with a
+  leave the window dismissed, after which writing the question fails with a
   set-value error. The ask script detects this (window count zero, or no text
   area in the tree) and reopens the window with `open -g -a "Perplexity"`, which
   restores it *without* pulling focus away from whatever the person is doing.
 - **Long answers can be truncated in the tree.** The app renders the answer
   lazily, so the accessibility tree may hold only its first lines. The ask script
   detects this (the text does not end on sentence punctuation) and borrows the
-  clipboard once as a fallback — saving and restoring what was in it. That
+  clipboard once as a fallback, saving and restoring what was in it. That
   fallback is *verified*: more than one Copy control can exist in the tree, and
   clicking the wrong one returns a completely different thread's text, which is
   far worse than a short answer because it reads as a genuine reply. The copy is
@@ -135,8 +135,8 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
   often, ask narrower questions.
 - **The sidebar is in the tree too.** It lists the account's other recent
   threads, so a naive read of every static-text line prints unrelated history
-  into the transcript. The open question appears twice — once in that sidebar
-  list, then again at the top of the thread — so the answer is everything after
+  into the transcript. The open question appears twice, once in that sidebar
+  list, then again at the top of the thread, so the answer is everything after
   its last occurrence.
 - **App state drifts under repeated automated runs.** Driving a native app
   through the accessibility API is not a transaction: a "new session" click can
@@ -144,8 +144,8 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
   re-render and drop text that was just written. Expect an occasional run to
   return NOT-FINISHED (exit 2) or to fail submitting. Retry it; if two runs in a
   row fail, switch to the browser path rather than fighting the app. Every unsafe
-  consequence of this drift is guarded — a copied answer is rejected unless it
-  matches this thread, and an agent mode blocks the submit — but the flakiness
+  consequence of this drift is guarded, a copied answer is rejected unless it
+  matches this thread, and an agent mode blocks the submit, but the flakiness
   itself is inherent, not a bug that can be fully fixed from outside the app.
 - **The upstream answer reader may not work** against a current app build; it
   waits on UI details that build no longer exposes. That is why this skill reads
@@ -161,7 +161,7 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
 - **Deep Research** returns far more sources and takes minutes. It draws a quota
   shared with the person's own usage that consumer plans do not publish, so ask
   before running one and take the yes as covering that run only.
-  Judge whether it really ran from the behavior — many steps, minutes, dozens
+  Judge whether it really ran from the behavior, many steps, minutes, dozens
   of sources. A three-step answer that returns quickly ran as a plain search.
 - **Agent modes** (variously called Computer, Control browser, or similar) spend
   real credits and drive things on their own. They are available to use, but the
@@ -171,7 +171,7 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
 - **Tier-gated models and modes** are an upgrade prompt for anyone not on that
   plan. Never select one, and never click add-credits, upgrade or subscribe -
   approving a paid run is not approving a purchase.
-- If a model selector is changed for one round, set it back afterward — the
+- If a model selector is changed for one round, set it back afterward, the
   account belongs to a person who will use it next.
 
 ## Data boundary
@@ -179,5 +179,5 @@ rebuild. The same applies to the `perplexity-desktop://` style URL scheme.
 The question, and anything attached to the session as context, leaves the
 machine. Keep credentials, keys, private customer records, and material under
 an agreement out of it. If folder or file context is useful, create a folder
-that holds only shareable material and point the app at that — never at a whole
+that holds only shareable material and point the app at that, never at a whole
 working repository, which normally contains private files.

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pplx-setup.sh — choose and record how this machine talks to Perplexity.
+# pplx-setup.sh: choose and record how this machine talks to Perplexity.
 #
 #   pplx-setup.sh                 # report what is available here, change nothing
 #   pplx-setup.sh --path app      # record the desktop-app path
@@ -48,11 +48,11 @@ find_app() {
 
 report() {
   case "$PLATFORM" in
-    macos)   echo "Platform:        macOS — both paths available" ;;
-    windows) echo "Platform:        Windows — browser path (the app path is macOS only)" ;;
-    wsl)     echo "Platform:        WSL — browser path, driving a browser on the Windows side" ;;
-    linux)   echo "Platform:        Linux — browser path (the app path is macOS only)" ;;
-    *)       echo "Platform:        unrecognised — browser path is the safe choice" ;;
+    macos)   echo "Platform:        macOS, both paths available" ;;
+    windows) echo "Platform:        Windows, browser path (the app path is macOS only)" ;;
+    wsl)     echo "Platform:        WSL, browser path, driving a browser on the Windows side" ;;
+    linux)   echo "Platform:        Linux, browser path (the app path is macOS only)" ;;
+    *)       echo "Platform:        unrecognised, browser path is the safe choice" ;;
   esac
   if APP=$(find_app); then echo "Perplexity app:  found at $APP"
   else echo "Perplexity app:  not found"; fi
@@ -60,7 +60,7 @@ report() {
   elif [ "$PLATFORM" = "macos" ]; then echo "Desktop helper:  not installed (build it with --install-cli)"
   else echo "Desktop helper:  not applicable on this platform"; fi
   if [ -f "$CONFIG" ]; then echo "Recorded path:   $(grep -E '^path=' "$CONFIG" | cut -d= -f2)"
-  else echo "Recorded path:   none yet — ask the user which they prefer, then rerun with --path"; fi
+  else echo "Recorded path:   none yet, ask the user which they prefer, then rerun with --path"; fi
 
   # The app path is the recommended default wherever it can run: it works in the
   # background instead of taking over a browser window the person is using.
@@ -69,7 +69,7 @@ report() {
   elif [ "$PLATFORM" = "macos" ]; then
     echo "Recommended:     app, once the Perplexity desktop app is installed; browser until then"
   else
-    echo "Recommended:     browser  (the only path on this platform — do not ask, just say so)"
+    echo "Recommended:     browser  (the only path on this platform, do not ask, just say so)"
   fi
 }
 
@@ -77,7 +77,7 @@ write_config() {
   local choice="$1"
   mkdir -p "$CONFIG_DIR"
   {
-    echo "# written by pplx-setup.sh — safe to edit or delete"
+    echo "# written by pplx-setup.sh, safe to edit or delete"
     echo "path=$choice"
     if [ "$choice" = "app" ] && CLI=$(find_cli); then echo "cli=$CLI"; fi
   } > "$CONFIG"
@@ -95,7 +95,7 @@ install_cli() {
   mkdir -p "$HOME/.local/bin"
   ( cd "$SRC" && go build -o "$HOME/.local/bin/pplx" . ) || {
     echo "Build failed. The upstream helper may need its bundle id and URL scheme updated"
-    echo "for your app version — see references/SETUP.md."
+    echo "for your app version, see references/SETUP.md."
     exit 1; }
   echo "Built: $HOME/.local/bin/pplx"
   echo "macOS will ask for Accessibility permission the first time it drives the app."
@@ -115,14 +115,14 @@ doctor() {
 
   case "$chosen" in
     app)
-      if ! CLI=$(find_cli); then echo "FAIL  helper missing — run --install-cli"; return 1; fi
+      if ! CLI=$(find_cli); then echo "FAIL  helper missing, run --install-cli"; return 1; fi
       if "$CLI" dump 2>&1 | grep -qE '^\[windows\] count=[1-9]'; then
         echo "PASS  the app is running with a window"
       else
         echo "WARN  the app has no window; the ask script will reopen it in the background"
       fi
       if "$CLI" dump 2>&1 | grep -qiE '\[AXButton\] desc=(Sign in|Log in|Sign up|Continue with)'; then
-        echo "FAIL  the app looks signed out — the user signs in themselves, by hand,"
+        echo "FAIL  the app looks signed out, the user signs in themselves, by hand,"
         echo "      then rerun. This skill never signs in on anyone's behalf."; ok=1
       else
         echo "PASS  no sign-in screen detected"
@@ -130,10 +130,10 @@ doctor() {
       if "$CLI" dump 2>&1 | grep -qE '\[AXTextArea\]'; then
         echo "PASS  the composer is reachable"
       else
-        echo "FAIL  the composer is not reachable — open the app once, then rerun"; ok=1
+        echo "FAIL  the composer is not reachable, open the app once, then rerun"; ok=1
       fi
       if "$CLI" dump 2>&1 | grep -qE '\[AXButton\] desc=(Computer|Control browser) title=- val=On'; then
-        echo "FAIL  an agent mode is ON — it spends paid credits; switch to Search"; ok=1
+        echo "FAIL  an agent mode is ON, it spends paid credits; switch to Search"; ok=1
       else
         echo "PASS  no credit-spending mode is active"
       fi
@@ -143,7 +143,7 @@ doctor() {
       echo "      by the agent's own automation. Check it by opening perplexity.ai in a new"
       echo "      tab and confirming the composer is in Search mode before the first ask." ;;
     *)
-      echo "INFO  no path recorded yet — ask the user which they prefer, then --path" ;;
+      echo "INFO  no path recorded yet, ask the user which they prefer, then --path" ;;
   esac
   return $ok
 }
@@ -171,7 +171,7 @@ if [ -n "$CHOICE" ]; then
         exit 1
       fi
       find_app >/dev/null || echo "NOTE: the Perplexity app was not found in /Applications."
-      find_cli >/dev/null || echo "NOTE: the desktop helper is not installed yet — run with --install-cli."
+      find_cli >/dev/null || echo "NOTE: the desktop helper is not installed yet, run with --install-cli."
       write_config app ;;
     browser)
       write_config browser ;;
