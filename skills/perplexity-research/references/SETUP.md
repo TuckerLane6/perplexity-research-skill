@@ -12,6 +12,27 @@ machines that cannot run the app. The skill asks once and remembers the answer.
 | Runs in background | yes, the person keeps working | no, it drives a visible browser |
 | Use it when | the machine is a Mac (this is the default) | not macOS, no app installed, or the user asks for it |
 
+## Connecting the account
+
+Nothing to connect. The user signs in to Perplexity by hand, once, in the app or
+the browser — exactly as they would to use it themselves. The skill then works
+inside that signed-in session.
+
+There is **no API key, no token, and no OAuth step**, on either path. That is a
+deliberate design choice, not a missing feature:
+
+- an API key would bill the user's card per question, separately from the
+  subscription they already pay for;
+- exporting a session token to a config file — how several other integrations
+  work — copies the user's credentials out of the browser they belong to.
+
+This skill does neither. It never asks for a password, never signs in for the
+user, and never reads or stores cookies or tokens. If the app or page is signed
+out, the correct behavior is to say so and let the user sign in.
+
+Whatever plan the account has is what it uses. The available modes and models are
+read from the account at runtime rather than assumed.
+
 ## Browser path
 
 Nothing to install. The skill drives `https://www.perplexity.ai` with whatever
@@ -35,7 +56,8 @@ Rules that matter more than the tool:
 
 ## Desktop-app path
 
-1. Install the Perplexity macOS app and sign in.
+1. Install the Perplexity macOS app and sign in as the user, by hand. This is
+   the only account step, and it is the user's to do.
 2. Build the helper: `scripts/pplx-setup.sh --install-cli` (needs Go and git).
    It builds `pplx` into `~/.local/bin`.
 3. Grant Accessibility permission when macOS asks: System Settings → Privacy &

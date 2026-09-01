@@ -90,13 +90,26 @@ actually offers today.
 14. **Put the picker back** to what it was. A person shares this account.
 15. **Deep Research is chosen by the shape of the deliverable** — a multi-section
     report someone will read and cite — not by how hard the question feels. A
-    hard question with a one-line answer is still a Search. Say you are about to
-    run one and get a yes: consumer plans do not publish the remaining quota, so
-    neither you nor the user can measure what is left.
+    hard question with a one-line answer is still a Search. Permission to run one
+    is covered below, under money.
 16. **Check the citations before repeating anything.** Sourced-looking answers
     from research agents as a class have been measured citing sources that do not
     support the claim, so open the source and read it before a claim from here
     becomes a fact in your work.
+
+## The user's account is theirs — never handle it
+
+The user connects Perplexity themselves by signing in to the app or the browser,
+once, by hand. There is nothing for this skill to authenticate.
+
+- Never ask the user for a Perplexity password, and refuse it if offered.
+- Never try to sign in, sign up, or create an account on their behalf.
+- Never read, copy, store, or transmit session cookies or auth tokens. Reading
+  the answer out of an app the user is already signed in to is the whole method;
+  extracting their session is a different thing and is out of bounds.
+- If the app or page is signed out, say so and ask the user to sign in
+  themselves. Do not work around it.
+- Store nothing about the user beyond the two-line path config.
 
 ## Never spend the user's money
 
@@ -108,9 +121,10 @@ actually offers today.
 19. Never click "Add credits", never start a subscription or upgrade flow, and
     never select a mode or model marked as a higher tier than the user's plan.
     Those are the user's purchasing decisions, not the session's.
-20. Deep Research draws on a daily quota the user shares with their own usage.
-    Say you are about to run one and get a yes first. Plain searches need no
-    permission.
+20. Deep Research draws on a quota the user shares with their own usage, and
+    consumer plans do not publish how much of it is left — so neither the session
+    nor the user can measure it. Say you are about to run one and get a yes
+    first. Plain searches need no permission.
 
 ## Never leak the user's data
 

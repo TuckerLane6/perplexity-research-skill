@@ -62,6 +62,10 @@ same rules.
   to the automatic option and SAY so — never substitute a guess, and never let a
   failed selection pass silently.
 - **Nothing private goes into a question.** It is an outbound message.
+- **The account is the user's to connect.** They sign in to the app or browser by
+  hand, once. Never ask for their password, never sign in for them, and never
+  read, store, or transmit session cookies or auth tokens. If it is signed out,
+  ask them to sign in themselves.
 - **Leave the account as you found it** — reset any picker you changed, and
   delete throwaway test threads.
 

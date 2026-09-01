@@ -36,6 +36,34 @@ scripts/pplx-modes.sh --models      # current modes + the models this account of
 scripts/pplx-ask.sh "your question"
 ```
 
+## How your Perplexity account gets connected
+
+**You connect it once, by hand, the normal way. The skill never handles your
+account at all.**
+
+There is no API key to paste, no token to generate, no OAuth screen, and nothing
+to configure. You sign in to Perplexity the same way you already do:
+
+- **App path** — open the Perplexity desktop app and sign in, once. The skill
+  drives that already-signed-in app.
+- **Browser path** — be signed in to perplexity.ai in the browser your agent
+  automates. The skill uses the session already sitting in that browser.
+
+That is the whole connection story. Concretely, the skill:
+
+- **never asks you for your password**, and will refuse if you offer it
+- **never signs in on your behalf**, or creates an account for you
+- **never reads, copies, or stores session cookies or auth tokens** — several
+  other Perplexity integrations work by exporting your session token to a config
+  file; this one does not, and cannot, because it never touches them
+- **stores nothing about you.** The only file it writes is a two-line config
+  recording which path you chose and where the helper lives
+
+Whichever plan you are on is simply the plan it uses. Free, Pro, Max, Enterprise
+— the skill reads what your account offers and works within it. If you are not
+signed in, it tells you to sign in yourself rather than trying to do it for you;
+`--doctor` reports that state explicitly.
+
 ## How this differs from the other Perplexity integrations
 
 Most of what exists is an MCP server that calls Perplexity's **paid API** with an
@@ -119,7 +147,7 @@ The desktop path builds on [pplx-cli](https://github.com/toby1991/pplx-cli), an
 open-source macOS helper that drives the Perplexity app through the accessibility
 API. Depending on your app version it may need its bundle identifier and URL
 scheme updated before it works; [SETUP.md](skills/perplexity-research/references/SETUP.md)
-explains how to check, and lists the failure shapes we hit building this.
+explains how to check, and lists the failure shapes found while building it.
 
 ## License
 

@@ -98,6 +98,12 @@ doctor() {
       else
         echo "WARN  the app has no window; the ask script will reopen it in the background"
       fi
+      if "$CLI" dump 2>&1 | grep -qiE '\[AXButton\] desc=(Sign in|Log in|Sign up|Continue with)'; then
+        echo "FAIL  the app looks signed out — the user signs in themselves, by hand,"
+        echo "      then rerun. This skill never signs in on anyone's behalf."; ok=1
+      else
+        echo "PASS  no sign-in screen detected"
+      fi
       if "$CLI" dump 2>&1 | grep -qE '\[AXTextArea\]'; then
         echo "PASS  the composer is reachable"
       else
