@@ -37,8 +37,21 @@ CLI_UPSTREAM="https://github.com/toby1991/pplx-cli"
 # that is worth pinning for. Bump it deliberately after reading the diff.
 CLI_COMMIT="4acbf43ac192b527207e1c89eaada6ccc360a2b9"
 
+# Only these locations count. The ask and modes scripts refuse a helper from
+# anywhere else, so setup must not find, run, or record one either: a config
+# pointing outside the list would pass here and be rejected there.
+cli_allowed() {
+  case "$1" in
+    "$HOME/.local/bin/"*|/usr/local/bin/*|/opt/homebrew/bin/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 find_cli() {
-  if command -v pplx >/dev/null 2>&1; then command -v pplx; return 0; fi
+  local onpath
+  if onpath="$(command -v pplx 2>/dev/null)" && cli_allowed "$onpath"; then
+    echo "$onpath"; return 0
+  fi
   for c in "$HOME/.local/bin/pplx" "/usr/local/bin/pplx" "/opt/homebrew/bin/pplx"; do
     [ -x "$c" ] && { echo "$c"; return 0; }
   done
@@ -65,7 +78,7 @@ report() {
   if CLI=$(find_cli); then echo "Desktop helper:  found at $CLI"
   elif [ "$PLATFORM" = "macos" ]; then echo "Desktop helper:  not installed (build it with --install-cli)"
   else echo "Desktop helper:  not applicable on this platform"; fi
-  if [ -f "$CONFIG" ]; then echo "Recorded path:   $(grep -E '^path=' "$CONFIG" | cut -d= -f2)"
+  if [ -f "$CONFIG" ]; then echo "Recorded path:   $(grep -E '^path=' "$CONFIG" | cut -d= -f2 | tr -d '\r')"
   else echo "Recorded path:   none yet, ask the user which they prefer, then rerun with --path"; fi
 
   # The app path is the recommended default wherever it can run: it works in the
@@ -131,7 +144,7 @@ doctor() {
   report
   echo
   local chosen="none"
-  [ -f "$CONFIG" ] && chosen="$(grep -E '^path=' "$CONFIG" | cut -d= -f2)"
+  [ -f "$CONFIG" ] && chosen="$(grep -E '^path=' "$CONFIG" | cut -d= -f2 | tr -d '\r')"
 
   case "$chosen" in
     app)
@@ -172,7 +185,9 @@ CHOICE=""
 DO_INSTALL=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --path) CHOICE="${2:-}"; shift 2 ;;
+    --path)
+      [ $# -ge 2 ] || { echo "--path takes 'app' or 'browser'" >&2; exit 1; }
+      CHOICE="$2"; shift 2 ;;
     --install-cli) DO_INSTALL=1; shift ;;
     --doctor) doctor; exit $? ;;
     -h|--help) sed -n '2,13p' "$0"; exit 0 ;;

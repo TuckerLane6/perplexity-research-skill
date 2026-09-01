@@ -37,13 +37,25 @@ for a in "$@"; do
 done
 set -- "${ARGS[@]+"${ARGS[@]}"}"
 
-Q="${1:?usage: pplx-ask.sh \"question\" [max_wait_seconds] [--credits-approved]}"
+case "${1:-}" in
+  -h|--help|"")
+    echo "usage: pplx-ask.sh \"question\" [max_wait_seconds] [--credits-approved]"
+    echo
+    echo "Asks the Perplexity desktop app one plain-Search question and prints the answer."
+    echo "macOS only. On Windows and Linux use the browser path; see references/SETUP.md."
+    exit 0 ;;
+esac
+
+Q="$1"
 MAXWAIT="${2:-180}"
+case "$MAXWAIT" in
+  ''|*[!0-9]*) echo "max_wait_seconds must be a whole number of seconds." >&2; exit 1 ;;
+esac
 
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/perplexity-research-skill/config"
 
 PPLX=""
-[ -f "$CONFIG" ] && PPLX="$(grep -E '^cli=' "$CONFIG" 2>/dev/null | cut -d= -f2-)"
+[ -f "$CONFIG" ] && PPLX="$(grep -E '^cli=' "$CONFIG" 2>/dev/null | cut -d= -f2- | tr -d '\r')"
 if [ -z "$PPLX" ] || [ ! -x "$PPLX" ]; then
   if command -v pplx >/dev/null 2>&1; then PPLX="$(command -v pplx)"
   elif [ -x "$HOME/.local/bin/pplx" ]; then PPLX="$HOME/.local/bin/pplx"
@@ -180,15 +192,26 @@ read_tree() {
 "$PPLX" dump 2>&1 \
   | grep -E '^\s*\[AXStaticText\]' \
   | sed -E 's/^.*[[:space:]]val=//' \
-  | awk -v q="${Q:0:40}" '
+  | PPLX_Q="$Q" awk '
       BEGIN {
+        q = substr(ENVIRON["PPLX_Q"], 1, 40)
         # UI chrome that sits inside the answer region on some builds
-        noise = "^(MCP Tool|Success|Copy|Share|Answer|Sources|Images|Steps|Show more|Related|Ask a follow-up|Pro|Search|[0-9]+|[[:space:]]*)$"
+        # Chrome labels only. "Pro", "Search" and bare numbers were in this list
+        # and were eating real answers: a one-word reply, a year, a count.
+        noise = "^(MCP Tool|Success|Copy|Share|Answer|Sources|Images|Show more|Related|Ask a follow-up|[[:space:]]*)$"
       }
       { line[NR] = $0; if (index($0, q) > 0) last = NR }
       END {
-        if (!last) print "(could not locate the question in the thread; printing everything after it may be incomplete)" > "/dev/stderr"
-        for (i = (last ? last + 1 : 1); i <= NR; i++) {
+        if (!last) {
+          # Without the question as a boundary there is no way to tell this
+          # answer from the rest of the tree, which includes the sidebar list of
+          # the account other threads. Refuse rather than print someone else\047s
+          # research.
+          print "ANSWER-NOT-LOCATED: the question was not found in the thread, so the answer" > "/dev/stderr"
+          print "region could not be isolated. Nothing printed, to avoid returning unrelated threads." > "/dev/stderr"
+          exit 9
+        }
+        for (i = last + 1; i <= NR; i++) {
           t = line[i]
           if (t ~ noise) continue
           if (seen[t]++) continue
@@ -203,7 +226,18 @@ read_tree() {
 # The clipboard belongs to the person at the keyboard, so it is saved first and put
 # straight back, it is borrowed for about a second, never kept.
 read_clipboard() {
-  local saved answer
+  local saved answer flavours
+  # pbpaste and pbcopy only carry plain text. If the clipboard currently holds an
+  # image, RTF or files, a save-and-restore round trip would silently replace it
+  # with empty text. Losing someone's clipboard is worse than a short answer, so
+  # skip the fallback entirely unless the clipboard is text or empty.
+  flavours="$(osascript -e 'clipboard info' 2>/dev/null || true)"
+  case "$flavours" in
+    ""|*utf8*|*"«class utf8»"*|*string*) ;;
+    *) echo "NOTE: clipboard holds non-text content, so it was left alone and the" >&2
+       echo "      long-answer fallback was skipped." >&2
+       return 1 ;;
+  esac
   saved="$(pbpaste 2>/dev/null || true)"
   "$PPLX" click "Copy" >/dev/null 2>&1 || return 1
   sleep 1

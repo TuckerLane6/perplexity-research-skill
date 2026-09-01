@@ -83,8 +83,11 @@ Leaving everything on auto wastes a strong model on trivia and sends a hard
 question to a fast one. Choose deliberately, but choose from what this account
 actually offers today.
 
-14. **Read the lineup, never hardcode it.** Run `scripts/pplx-modes.sh --models`
-    and pick from what it prints. Perplexity's own documentation says the model
+14. **Read the lineup, never hardcode it.** On the app path run
+    `scripts/pplx-modes.sh --models` and pick from what it prints; that script
+    needs the macOS helper, so on the browser path read the model control in the
+    page instead, before submitting. Either way the account's own picker is the
+    source, never a list written down anywhere. Perplexity's own documentation says the model
     selector in the app is the source of truth for an account, because models are
     added and retired continuously, so any list written into a skill file is
     wrong within weeks, and wrong in a way that reads as authoritative.

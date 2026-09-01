@@ -61,10 +61,10 @@ function Write-Report {
 
 function Write-Config([string]$Choice) {
   if (-not (Test-Path $ConfigDir)) { New-Item -ItemType Directory -Path $ConfigDir -Force | Out-Null }
-  @(
-    '# written by pplx-setup.ps1 - safe to edit or delete'
-    "path=$Choice"
-  ) | Set-Content -Path $ConfigFile -Encoding ascii
+  # Write LF, not CRLF: the bash scripts read this same file, and a trailing
+  # carriage return would make 'browser' parse as 'browser<CR>' and match nothing.
+  $text = "# written by pplx-setup.ps1 - safe to edit or delete`npath=$Choice`n"
+  [System.IO.File]::WriteAllText($ConfigFile, $text, (New-Object System.Text.ASCIIEncoding))
   Write-Host "Recorded: path=$Choice  ->  $ConfigFile"
 }
 

@@ -30,6 +30,7 @@ macOS and Linux:
 
 ```bash
 git clone https://github.com/TuckerLane6/perplexity-research-skill.git
+mkdir -p ~/.claude/skills
 cp -r perplexity-research-skill/skills/perplexity-research ~/.claude/skills/
 chmod +x ~/.claude/skills/perplexity-research/scripts/*.sh
 ```
@@ -38,6 +39,7 @@ Windows (PowerShell):
 
 ```powershell
 git clone https://github.com/TuckerLane6/perplexity-research-skill.git
+New-Item -ItemType Directory -Force $HOME\.claude\skills | Out-Null
 Copy-Item -Recurse perplexity-research-skill\skills\perplexity-research $HOME\.claude\skills\
 ```
 
@@ -95,8 +97,8 @@ will refuse it if you offer. It never signs in for you or creates an account. It
 never reads, copies, or stores session cookies or auth tokens: several other
 Perplexity integrations work by exporting your session token to a config file,
 and this one cannot, because it never touches them. In normal use the only file
-it writes is a two-line config recording which path you chose and where the
-helper lives. The one exception is `--install-cli`, which you run deliberately:
+it writes is a small config recording which path you chose, and on the app path
+where the helper lives. The one exception is `--install-cli`, which you run deliberately:
 it clones the helper into a temporary directory and builds a binary into
 `~/.local/bin`.
 
@@ -214,14 +216,18 @@ Perplexity account. No API key and no paid API.
 The app path needs macOS, the Perplexity desktop app, and Go and git to build the
 helper. The browser path needs whatever browser automation your session already
 has, with nothing to install or build. If a machine has no usable shell, the
-config is a two-line text file you can write by hand.
+config is a short text file you can write by hand: a comment line and
+`path=browser`.
 
 ## Credits
 
 The desktop path builds on [pplx-cli](https://github.com/toby1991/pplx-cli), an
 open-source macOS helper that drives the Perplexity app through the accessibility
-API. Depending on your app version it may need its bundle identifier and URL
-scheme updated first.
+API. The build is pinned to commit `4acbf43`, so an upstream change cannot
+compile onto your machine until you bump the pin deliberately, and the helper is
+only run from `~/.local/bin`, `/usr/local/bin` or `/opt/homebrew/bin`. Depending
+on your app version it may need its bundle identifier and URL scheme updated
+first.
 [SETUP.md](skills/perplexity-research/references/SETUP.md) explains how to check,
 and lists the failure shapes found while building this.
 

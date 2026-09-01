@@ -43,12 +43,14 @@ nothing to install and nothing to build. Record it once and start asking.
 - **Windows with Git Bash or WSL**: `scripts/pplx-setup.sh --path browser`
 - **Linux**: `scripts/pplx-setup.sh --path browser`
 - **No usable shell**: write the config file directly. It lives at
-  `~/.config/perplexity-research-skill/config` on every platform and contains one
-  meaningful line, `path=browser`.
+  `~/.config/perplexity-research-skill/config` on every platform. It holds a
+  comment line and `path=browser`, and on the app path a third line recording
+  where the helper lives.
 
 Both setup scripts write the same file in the same place, so it does not matter
-which one a machine uses, verified on Windows PowerShell 5.1 and Git Bash on the
-same machine, each reading the config the other wrote. `scripts/pplx-ask.sh` is macOS-only by design and says
+which one a machine uses. PowerShell writes LF line endings for that reason, and
+the shell scripts strip a stray carriage return when reading, so a config written
+on either side parses on the other. `scripts/pplx-ask.sh` is macOS-only by design and says
 so if it is run anywhere else.
 
 ## Browser path
@@ -82,6 +84,12 @@ Rules that matter more than the tool:
    Security → Accessibility.
 4. Record the choice: `scripts/pplx-setup.sh --path app`.
 5. Ask: `scripts/pplx-ask.sh "your question"`.
+
+The build is pinned to upstream commit `4acbf43`, so an upstream change cannot
+compile onto the machine until someone bumps the pin on purpose. The helper is
+run only from `~/.local/bin`, `/usr/local/bin` or `/opt/homebrew/bin`; a config
+pointing anywhere else is refused, because that file is hand-editable and the
+scripts execute what it names.
 
 The helper is a fork-friendly open-source tool
 (`https://github.com/toby1991/pplx-cli`). The skill uses three of its

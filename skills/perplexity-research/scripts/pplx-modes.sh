@@ -12,7 +12,7 @@ set -uo pipefail
 
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/perplexity-research-skill/config"
 PPLX=""
-[ -f "$CONFIG" ] && PPLX="$(grep -E '^cli=' "$CONFIG" 2>/dev/null | cut -d= -f2-)"
+[ -f "$CONFIG" ] && PPLX="$(grep -E '^cli=' "$CONFIG" 2>/dev/null | cut -d= -f2- | tr -d '\r')"
 if [ -z "$PPLX" ] || [ ! -x "$PPLX" ]; then
   if command -v pplx >/dev/null 2>&1; then PPLX="$(command -v pplx)"
   elif [ -x "$HOME/.local/bin/pplx" ]; then PPLX="$HOME/.local/bin/pplx"
